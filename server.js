@@ -11,6 +11,7 @@ const DashboardRealTimeService = require("./src/services/dashboardRealTimeServic
 const dashboardEventService = require("./src/services/dashboardEventService");
 const DashboardPushService = require("./src/services/dashboardPushService");
 const cacheService = require("./src/utils/cacheService");
+const { initializeDatabase } = require("./init-database");
 
 // Crear servidor HTTP y Express
 const app = express();
@@ -325,19 +326,35 @@ app.use((error, req, res, next) => {
     });
 });
 
-// --- Iniciar Servidor con WebSocket y RealTimeService ---
-server.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 Servidor backend corriendo en http://localhost:${PORT}`);
-    console.log(`📡 API disponible en http://localhost:${PORT}/api`);
-    console.log(`🔗 Health check en http://localhost:${PORT}/api/health`);
-    console.log(`🔌 WebSocket disponible en ws://localhost:${PORT}`);
-    console.log(`⚡ RealTimeService: Sistema de notificaciones avanzado activo`);
-    console.log(`📱 Para React Native emulador: http://10.0.2.2:${PORT}/api`);
-    console.log(`🌐 CORS habilitado para múltiples orígenes`);
-    console.log(`🔧 Entorno: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`📊 WebSocket: Habilitado con autenticación JWT`);
-    console.log(`🔔 RealTimeService: Conexiones activas: ${realTimeService.getClientCount()}`);
-});
+// --- Función para iniciar el servidor ---
+async function startServer() {
+    try {
+        // Ejecutar migración de base de datos automáticamente
+        console.log('🔄 Inicializando base de datos...');
+        await initializeDatabase();
+        console.log('✅ Base de datos inicializada correctamente');
+        
+        // Iniciar servidor después de la migración
+        server.listen(PORT, '0.0.0.0', () => {
+            console.log(`🚀 Servidor backend corriendo en http://localhost:${PORT}`);
+            console.log(`📡 API disponible en http://localhost:${PORT}/api`);
+            console.log(`🔗 Health check en http://localhost:${PORT}/api/health`);
+            console.log(`🔌 WebSocket disponible en ws://localhost:${PORT}`);
+            console.log(`⚡ RealTimeService: Sistema de notificaciones avanzado activo`);
+            console.log(`📱 Para React Native emulador: http://10.0.2.2:${PORT}/api`);
+            console.log(`🌐 CORS habilitado para múltiples orígenes`);
+            console.log(`🔧 Entorno: ${process.env.NODE_ENV || 'development'}`);
+            console.log(`📊 WebSocket: Habilitado con autenticación JWT`);
+            console.log(`🔔 RealTimeService: Conexiones activas: ${realTimeService.getClientCount()}`);
+        });
+    } catch (error) {
+        console.error('❌ Error al inicializar la aplicación:', error.message);
+        process.exit(1);
+    }
+}
+
+// Iniciar el servidor
+startServer();
 
 // Exportar para testing
 module.exports = { app, server, io };
