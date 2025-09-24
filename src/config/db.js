@@ -27,7 +27,6 @@ const pool = mysql.createPool({
 
     // Configuración de timeout de conexión (válida)
     connectTimeout: 60000,      // 60 segundos timeout de conexión
-    timeout: 60000,             // Query timeout
 
     // REMOVIDAS las siguientes opciones que causan advertencias:
     // reconnect: true,         // Esta opción está deprecada

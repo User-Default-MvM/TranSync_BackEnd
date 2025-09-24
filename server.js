@@ -61,8 +61,10 @@ const corsOptions = {
       'http://127.0.0.1:3000',        // Web app alternativa
       'https://transync.com',         // Dominio producción
       'https://www.transync.com',     // Dominio producción con www
-      'https://api.transync.com',      // API en producción
-    ];
+      'https://api.transync.com',     // API en producción
+      'https://transync1.netlify.app', // Frontend en Netlify
+      process.env.FRONTEND_URL,       // URL del frontend desde .env
+    ].filter(Boolean); // Filtrar valores undefined/null
 
     // En desarrollo, permitir cualquier origen localhost
     if (process.env.NODE_ENV !== 'production') {
