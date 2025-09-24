@@ -32,21 +32,61 @@ async function initializeDatabase() {
         const sqlScript = fs.readFileSync(sqlPath, 'utf8');
         console.log('✅ Script SQL leído correctamente');
 
-        // Dividir el script en declaraciones individuales
-        const statements = sqlScript
-            .split(';')
-            .map(stmt => stmt.trim())
-            .filter(stmt => stmt.length > 0 && !stmt.startsWith('--'));
+        // Dividir el script en declaraciones individuales de manera más inteligente
+        // Primero, remover comentarios de línea completa
+        const cleanScript = sqlScript
+            .split('\n')
+            .filter(line => !line.trim().startsWith('--'))
+            .join('\n');
+        
+        // Dividir por punto y coma, pero mantener juntas las declaraciones INSERT complejas
+        const statements = [];
+        let currentStatement = '';
+        let inString = false;
+        let stringChar = '';
+        
+        for (let i = 0; i < cleanScript.length; i++) {
+            const char = cleanScript[i];
+            const prevChar = i > 0 ? cleanScript[i - 1] : '';
+            
+            if ((char === '"' || char === "'") && prevChar !== '\\') {
+                if (!inString) {
+                    inString = true;
+                    stringChar = char;
+                } else if (char === stringChar) {
+                    inString = false;
+                    stringChar = '';
+                }
+            }
+            
+            currentStatement += char;
+            
+            if (char === ';' && !inString) {
+                const stmt = currentStatement.trim();
+                if (stmt.length > 0) {
+                    statements.push(stmt.replace(/;$/, ''));
+                }
+                currentStatement = '';
+            }
+        }
+        
+        // Agregar la última declaración si no termina en punto y coma
+        if (currentStatement.trim().length > 0) {
+            statements.push(currentStatement.trim());
+        }
+        
+        // Filtrar declaraciones vacías
+        const validStatements = statements.filter(stmt => stmt.length > 0);
 
-        console.log(`🔄 Ejecutando ${statements.length} declaraciones SQL...`);
+        console.log(`🔄 Ejecutando ${validStatements.length} declaraciones SQL...`);
 
         // Ejecutar cada declaración
-        for (let i = 0; i < statements.length; i++) {
-            const statement = statements[i];
+        for (let i = 0; i < validStatements.length; i++) {
+            const statement = validStatements[i];
             if (statement.trim()) {
                 try {
                     await connection.execute(statement);
-                    console.log(`✅ Declaración ${i + 1}/${statements.length} ejecutada`);
+                    console.log(`✅ Declaración ${i + 1}/${validStatements.length} ejecutada`);
                 } catch (error) {
                     // Ignorar errores de "database exists" o "table exists"
                     if (error.code === 'ER_DB_CREATE_EXISTS' || 
