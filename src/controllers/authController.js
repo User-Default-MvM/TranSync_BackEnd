@@ -53,6 +53,122 @@ const register = async (req, res) => {
         if (existingUser.length > 0) {
             await connection.rollback();
             console.log("❌ Usuario ya existe");
+
+            // Verificar si el usuario está activo
+            const [userDetails] = await connection.query(
+                "SELECT estActivo FROM Usuarios WHERE email = ?",
+                [email]
+            );
+
+            if (userDetails.length > 0 && !userDetails[0].estActivo) {
+                // Usuario existe pero no está verificado - reenviar email de verificación
+                const userId = existingUser[0].idUsuario;
+                console.log("🔄 Usuario no verificado, reenviando email de verificación...");
+
+                const verifyToken = jwt.sign({ id: userId }, process.env.JWT_SECRET, { expiresIn: '1d' });
+                const baseUrl = process.env.NODE_ENV === 'production'
+                    ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN || 'your-app.railway.app'}`
+                    : `https://${process.env.RAILWAY_PUBLIC_DOMAIN || 'your-app.railway.app'}`;
+                const verifyUrl = `${baseUrl}/api/auth/verify?token=${verifyToken}`;
+
+                sendEmailAsync(
+                    email,
+                    "Verifica Tu Cuenta De Transync",
+                    `
+                    <html lang="es">
+                    <head>
+                        <meta charset="UTF-8">
+                        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                        <title>Verificación de Cuenta - Transync</title>
+                        <style>
+                            body {
+                                font-family: Arial, sans-serif;
+                                margin: 0;
+                                padding: 0;
+                                background-color: #f4f4f9;
+                            }
+                            .email-container {
+                                width: 100%;
+                                max-width: 600px;
+                                margin: 0 auto;
+                                background-color: #ffffff;
+                                border-radius: 8px;
+                                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+                                overflow: hidden;
+                            }
+                            .email-header {
+                                background-color: #007bff;
+                                color: #ffffff;
+                                padding: 20px;
+                                text-align: center;
+                            }
+                            .email-header h1 {
+                                margin: 0;
+                                font-size: 24px;
+                            }
+                            .email-body {
+                                padding: 30px;
+                                color: #333333;
+                            }
+                            .email-body p {
+                                font-size: 16px;
+                                line-height: 1.6;
+                            }
+                            .email-button {
+                                display: inline-block;
+                                padding: 12px 25px;
+                                background-color: #28a745;
+                                color: #ffffff;
+                                text-decoration: none;
+                                border-radius: 4px;
+                                margin-top: 20px;
+                            }
+                            .footer {
+                                text-align: center;
+                                background-color: #f9f9f9;
+                                padding: 20px;
+                                color: #888888;
+                                font-size: 14px;
+                            }
+                            @media (max-width: 600px) {
+                                .email-container {
+                                    width: 100%;
+                                    padding: 15px;
+                                }
+                                .email-header h1 {
+                                    font-size: 20px;
+                                }
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        <div class="email-container">
+                            <div class="email-header">
+                                <h1>Reenvío de Verificación - TranSync</h1>
+                            </div>
+                            <div class="email-body">
+                                <p>¡Hola!</p>
+                                <p>Tu cuenta ya existe pero aún no está verificada. Para completar tu proceso de registro, por favor verifica tu cuenta haciendo clic en el siguiente enlace:</p>
+                                <a href="${verifyUrl}" class="email-button" target="_blank">Verificar mi cuenta</a>
+                                <p>Este enlace expirará en 24 horas. Si no realizaste esta solicitud, puedes ignorar este correo.</p>
+                                <p>Si tienes alguna pregunta, no dudes en contactarnos.</p>
+                                <p>¡Gracias por ser parte de TranSync!</p>
+                            </div>
+                            <div class="footer">
+                                <p>Transync &copy; 2025</p>
+                                <p><a href="mailto:support@transync.com" style="color: #007bff;">support@transync.com</a></p>
+                            </div>
+                        </div>
+                    </body>
+                    </html>
+                    `
+                );
+
+                return res.status(200).json({
+                    message: "Usuario ya existe pero no está verificado. Se ha reenviado el email de verificación."
+                });
+            }
+
             return res.status(409).json({ message: "El correo o documento ya está registrado." });
         }
 
@@ -696,6 +812,132 @@ const healthCheck = async (req, res) => {
     }
 };
 
+// TEST EMAIL
+const testEmail = async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({ message: "Email requerido para prueba" });
+        }
+
+        console.log(`🧪 Probando envío de email a: ${email}`);
+
+        await sendEmail(
+            email,
+            "Prueba de Email - TranSync",
+            `
+            <html lang="es">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Prueba de Email - TranSync</title>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        margin: 0;
+                        padding: 0;
+                        background-color: #f4f4f9;
+                    }
+                    .email-container {
+                        width: 100%;
+                        max-width: 600px;
+                        margin: 0 auto;
+                        background-color: #ffffff;
+                        border-radius: 8px;
+                        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+                        overflow: hidden;
+                    }
+                    .email-header {
+                        background-color: #28a745;
+                        color: #ffffff;
+                        padding: 20px;
+                        text-align: center;
+                    }
+                    .email-header h1 {
+                        margin: 0;
+                        font-size: 24px;
+                    }
+                    .email-body {
+                        padding: 30px;
+                        color: #333333;
+                    }
+                    .email-body p {
+                        font-size: 16px;
+                        line-height: 1.6;
+                    }
+                    .success-message {
+                        background-color: #d4edda;
+                        color: #155724;
+                        padding: 15px;
+                        border-radius: 4px;
+                        margin: 20px 0;
+                        border: 1px solid #c3e6cb;
+                    }
+                    .footer {
+                        text-align: center;
+                        background-color: #f9f9f9;
+                        padding: 20px;
+                        color: #888888;
+                        font-size: 14px;
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="email-container">
+                    <div class="email-header">
+                        <h1>✅ Prueba de Email Exitosa</h1>
+                    </div>
+                    <div class="email-body">
+                        <div class="success-message">
+                            <strong>¡El servicio de email está funcionando correctamente!</strong>
+                        </div>
+                        <p>¡Hola!</p>
+                        <p>Este es un email de prueba para verificar que el servicio de correo electrónico de TranSync esté funcionando correctamente.</p>
+                        <p><strong>Información de la prueba:</strong></p>
+                        <ul>
+                            <li>📧 Email enviado desde: ${process.env.EMAIL_USER}</li>
+                            <li>🕐 Fecha y hora: ${new Date().toLocaleString('es-CO')}</li>
+                            <li>🌐 Servidor: ${process.env.RAILWAY_PUBLIC_DOMAIN || 'Railway'}</li>
+                            <li>⚙️ Entorno: ${process.env.NODE_ENV}</li>
+                        </ul>
+                        <p>Si recibiste este email, significa que:</p>
+                        <ul>
+                            <li>✅ La configuración de Gmail está correcta</li>
+                            <li>✅ Los timeouts están configurados apropiadamente</li>
+                            <li>✅ El servicio de email está operativo</li>
+                            <li>✅ Los emails de verificación funcionarán</li>
+                        </ul>
+                        <p>¡Gracias por usar TranSync!</p>
+                    </div>
+                    <div class="footer">
+                        <p>TranSync &copy; 2025</p>
+                        <p><a href="mailto:support@transync.com" style="color: #007bff;">support@transync.com</a></p>
+                    </div>
+                </div>
+            </body>
+            </html>
+            `
+        );
+
+        console.log(`✅ Email de prueba enviado exitosamente a: ${email}`);
+        res.json({
+            success: true,
+            message: "Email de prueba enviado exitosamente",
+            timestamp: new Date().toISOString()
+        });
+
+    } catch (error) {
+        console.error("❌ Error al enviar email de prueba:", error);
+        res.status(500).json({
+            success: false,
+            message: "Error al enviar email de prueba",
+            error: error.message,
+            timestamp: new Date().toISOString()
+        });
+    }
+};
+
 // VALIDACION DE CONTRASEÑA SEGURA
 function esPasswordSegura(password) {
     const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
@@ -714,5 +956,6 @@ module.exports = {
     updateProfile,
     changePassword,
     healthCheck,
+    testEmail,
     esPasswordSegura
 };

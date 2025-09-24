@@ -3,7 +3,7 @@
 const nodemailer = require("nodemailer");
 
 const transporter = nodemailer.createTransport({
-    service: "Gmail",
+    service: "gmail",
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
@@ -12,6 +12,12 @@ const transporter = nodemailer.createTransport({
     connectionTimeout: 30000, // 30 segundos
     greetingTimeout: 15000,   // 15 segundos
     socketTimeout: 60000,     // 60 segundos
+    // Configuración adicional para Gmail
+    secure: true,
+    tls: {
+        ciphers: 'SSLv3',
+        rejectUnauthorized: false
+    }
 });
 
 /**
@@ -40,6 +46,13 @@ const sendEmail = async (to, subject, html, timeout = 30000) => {
         })
         .catch((error) => {
             clearTimeout(timeoutId);
+            console.error("❌ Error detallado al enviar email:", {
+                to,
+                subject,
+                error: error.message,
+                code: error.code,
+                stack: error.stack
+            });
             reject(error);
         });
     });
@@ -58,7 +71,11 @@ const sendEmailAsync = (to, subject, html) => {
             await sendEmail(to, subject, html, 20000); // 20 segundos timeout
             console.log(`✅ Email enviado exitosamente a: ${to}`);
         } catch (error) {
-            console.error(`❌ Error enviando email a ${to}:`, error.message);
+            console.error(`❌ Error enviando email a ${to}:`, {
+                message: error.message,
+                code: error.code,
+                stack: error.stack
+            });
             // No lanzar error para no afectar el flujo principal
         }
     });
