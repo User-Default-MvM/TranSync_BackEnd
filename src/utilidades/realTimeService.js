@@ -5,7 +5,7 @@ class RealTimeService {
   constructor(server) {
     this.io = new Server(server, {
       cors: {
-        origin: process.env.FRONTEND_URL || "http://localhost:3000",
+        origin: process.env.FRONTEND_URL || `https://${process.env.RAILWAY_PUBLIC_DOMAIN || 'your-app.railway.app'}`,
         methods: ["GET", "POST"],
         credentials: true
       },

@@ -89,7 +89,7 @@ const register = async (req, res) => {
         const verifyToken = jwt.sign({ id: newUserId }, process.env.JWT_SECRET, { expiresIn: '1d' });
         const baseUrl = process.env.NODE_ENV === 'production'
             ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN || 'your-app.railway.app'}`
-            : 'http://localhost:5000';
+            : `https://${process.env.RAILWAY_PUBLIC_DOMAIN || 'your-app.railway.app'}`;
         const verifyUrl = `${baseUrl}/api/auth/verify?token=${verifyToken}`;
 
         // Enviar email de verificación de forma asíncrona (no bloquea la respuesta)

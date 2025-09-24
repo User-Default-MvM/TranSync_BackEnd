@@ -54,7 +54,7 @@ const corsOptions = {
 
     // Lista de orígenes permitidos
     const allowedOrigins = [
-      'http://localhost:3000',        // Web app desarrollo
+      process.env.FRONTEND_URL || `https://${process.env.RAILWAY_PUBLIC_DOMAIN || 'your-app.railway.app'}`,
       'http://10.0.2.2:8081',         // Emulador Android con Expo
       'http://localhost:8081',        // Expo local
       'http://localhost:19006',       // Expo web
@@ -244,7 +244,7 @@ app.get('/', (req, res) => {
         },
         websocket: {
             enabled: true,
-            url: `ws://localhost:${PORT}`,
+            url: `wss://${process.env.RAILWAY_PUBLIC_DOMAIN || 'your-app.railway.app'}`,
             features: [
                 'Real-time notifications',
                 'Live chat updates',
@@ -305,7 +305,7 @@ app.use((req, res) => {
             'POST /api/chatbot/consulta'
         ],
         websocket: {
-            url: `ws://localhost:${PORT}`,
+            url: `wss://${process.env.RAILWAY_PUBLIC_DOMAIN || 'your-app.railway.app'}`,
             auth: 'Requiere token JWT en handshake',
             realTimeService: 'Sistema de notificaciones avanzado habilitado'
         },
@@ -337,10 +337,11 @@ async function startServer() {
         
         // Iniciar servidor después de la migración
         server.listen(PORT, '0.0.0.0', () => {
-            console.log(`🚀 Servidor backend corriendo en http://localhost:${PORT}`);
-            console.log(`📡 API disponible en http://localhost:${PORT}/api`);
-            console.log(`🔗 Health check en http://localhost:${PORT}/api/health`);
-            console.log(`🔌 WebSocket disponible en ws://localhost:${PORT}`);
+            const baseUrl = `https://${process.env.RAILWAY_PUBLIC_DOMAIN || 'your-app.railway.app'}`;
+            console.log(`🚀 Servidor backend corriendo en ${baseUrl}`);
+            console.log(`📡 API disponible en ${baseUrl}/api`);
+            console.log(`🔗 Health check en ${baseUrl}/api/health`);
+            console.log(`🔌 WebSocket disponible en wss://${process.env.RAILWAY_PUBLIC_DOMAIN || 'your-app.railway.app'}`);
             console.log(`⚡ RealTimeService: Sistema de notificaciones avanzado activo`);
             console.log(`📱 Para React Native emulador: http://10.0.2.2:${PORT}/api`);
             console.log(`🌐 CORS habilitado para múltiples orígenes`);
