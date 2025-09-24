@@ -112,7 +112,7 @@ async function initializeDatabase() {
 
         // Verificar que las tablas se crearon
         console.log('🔍 Verificando tablas creadas...');
-        await connection.execute('USE transync');
+        await connection.query('USE railway');
         const [tables] = await connection.execute('SHOW TABLES');
         
         console.log('✅ Base de datos inicializada correctamente');

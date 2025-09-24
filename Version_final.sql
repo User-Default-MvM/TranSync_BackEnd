@@ -1,10 +1,5 @@
-DROP DATABASE IF EXISTS transync;
-
--- Creación de la base de datos transync.
-CREATE DATABASE transync CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-
--- Sentencia para usar la base de datos recién creada.
-USE transync;
+-- Usar la base de datos railway proporcionada por Railway
+USE railway;
 
 -- =====================================================
 -- TABLAS PRINCIPALES DEL SISTEMA
