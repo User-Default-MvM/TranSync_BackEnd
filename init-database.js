@@ -85,11 +85,19 @@ async function initializeDatabase() {
             const statement = validStatements[i];
             if (statement.trim()) {
                 try {
-                    await connection.execute(statement);
+                    // Usar query() para comandos que no soportan prepared statements
+                    const upperStatement = statement.trim().toUpperCase();
+                    if (upperStatement.startsWith('USE ') ||
+                        upperStatement.startsWith('DROP DATABASE') ||
+                        upperStatement.startsWith('CREATE DATABASE')) {
+                        await connection.query(statement);
+                    } else {
+                        await connection.execute(statement);
+                    }
                     console.log(`✅ Declaración ${i + 1}/${validStatements.length} ejecutada`);
                 } catch (error) {
                     // Ignorar errores de "database exists" o "table exists"
-                    if (error.code === 'ER_DB_CREATE_EXISTS' || 
+                    if (error.code === 'ER_DB_CREATE_EXISTS' ||
                         error.code === 'ER_TABLE_EXISTS_ERROR' ||
                         error.message.includes('already exists')) {
                         console.log(`⚠️  Declaración ${i + 1}: ${error.message} (ignorado)`);
