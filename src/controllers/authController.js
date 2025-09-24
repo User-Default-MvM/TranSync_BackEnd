@@ -3,7 +3,7 @@
 const pool = require("../config/db");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const { sendEmail, sendEmailAsync } = require("../utils/emailService");
+const { sendEmail, sendEmailAsync, sendEmailWithSendGrid } = require("../utils/emailService");
 
 
 // REGISTRO DE USUARIO
@@ -1094,6 +1094,155 @@ const testEmailWithRetries = async (req, res) => {
     }
 };
 
+// TEST EMAIL CON SENDGRID WEB API
+const testEmailWithSendGrid = async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({ message: "Email requerido para prueba" });
+        }
+
+        console.log(`🚀 Probando envío de email con SendGrid Web API a: ${email}`);
+
+        // Usar SendGrid Web API directamente
+        await sendEmailWithSendGrid(
+            email,
+            "Prueba de Email con SendGrid - TranSync",
+            `
+            <html lang="es">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Prueba de Email con SendGrid - TranSync</title>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        margin: 0;
+                        padding: 0;
+                        background-color: #f4f4f9;
+                    }
+                    .email-container {
+                        width: 100%;
+                        max-width: 600px;
+                        margin: 0 auto;
+                        background-color: #ffffff;
+                        border-radius: 8px;
+                        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+                        overflow: hidden;
+                    }
+                    .email-header {
+                        background-color: #28a745;
+                        color: #ffffff;
+                        padding: 20px;
+                        text-align: center;
+                    }
+                    .email-header h1 {
+                        margin: 0;
+                        font-size: 24px;
+                    }
+                    .email-body {
+                        padding: 30px;
+                        color: #333333;
+                    }
+                    .email-body p {
+                        font-size: 16px;
+                        line-height: 1.6;
+                    }
+                    .success-message {
+                        background-color: #d4edda;
+                        color: #155724;
+                        padding: 15px;
+                        border-radius: 4px;
+                        margin: 20px 0;
+                        border: 1px solid #c3e6cb;
+                    }
+                    .sendgrid-info {
+                        background-color: #cce5ff;
+                        color: #004085;
+                        padding: 15px;
+                        border-radius: 4px;
+                        margin: 20px 0;
+                        border: 1px solid #b3d7ff;
+                    }
+                    .footer {
+                        text-align: center;
+                        background-color: #f9f9f9;
+                        padding: 20px;
+                        color: #888888;
+                        font-size: 14px;
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="email-container">
+                    <div class="email-header">
+                        <h1>🚀 Prueba de Email con SendGrid Exitosa</h1>
+                    </div>
+                    <div class="email-body">
+                        <div class="success-message">
+                            <strong>¡SendGrid Web API está funcionando perfectamente!</strong>
+                        </div>
+                        <div class="sendgrid-info">
+                            <strong>🚀 SendGrid Web API:</strong>
+                            <ul>
+                                <li>⚡ Respuesta inmediata (sin timeouts)</li>
+                                <li>🌐 Optimizado para Railway</li>
+                                <li>📊 Entrega garantizada</li>
+                                <li>🔒 Seguridad de nivel empresarial</li>
+                            </ul>
+                        </div>
+                        <p>¡Hola!</p>
+                        <p>Este es un email de prueba enviado usando <strong>SendGrid Web API</strong>, que es mucho más confiable que SMTP tradicional.</p>
+                        <p><strong>Información de la prueba:</strong></p>
+                        <ul>
+                            <li>📧 Email enviado desde: ${process.env.EMAIL_USER}</li>
+                            <li>🚀 Servicio: SendGrid Web API</li>
+                            <li>🕐 Fecha y hora: ${new Date().toLocaleString('es-CO')}</li>
+                            <li>🌐 Servidor: ${process.env.RAILWAY_PUBLIC_DOMAIN || 'Railway'}</li>
+                            <li>⚙️ Entorno: ${process.env.NODE_ENV}</li>
+                        </ul>
+                        <p>Si recibiste este email, significa que:</p>
+                        <ul>
+                            <li>✅ SendGrid está configurado correctamente</li>
+                            <li>✅ La API key es válida</li>
+                            <li>✅ Los emails de verificación funcionarán</li>
+                            <li>✅ No hay problemas de red o firewall</li>
+                        </ul>
+                        <p>¡Gracias por usar TranSync!</p>
+                    </div>
+                    <div class="footer">
+                        <p>TranSync &copy; 2025</p>
+                        <p><a href="mailto:support@transync.com" style="color: #007bff;">support@transync.com</a></p>
+                    </div>
+                </div>
+            </body>
+            </html>
+            `
+        );
+
+        console.log(`✅ Email de prueba con SendGrid Web API enviado exitosamente a: ${email}`);
+        res.json({
+            success: true,
+            message: "Email de prueba con SendGrid Web API enviado exitosamente",
+            timestamp: new Date().toISOString(),
+            service: "SendGrid Web API",
+            responseTime: "Instantáneo"
+        });
+
+    } catch (error) {
+        console.error("❌ Error al enviar email de prueba con SendGrid:", error);
+        res.status(500).json({
+            success: false,
+            message: "Error al enviar email de prueba con SendGrid",
+            error: error.message,
+            code: error.code,
+            timestamp: new Date().toISOString(),
+            service: "SendGrid Web API"
+        });
+    }
+};
+
 // VALIDACION DE CONTRASEÑA SEGURA
 function esPasswordSegura(password) {
     const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
@@ -1114,5 +1263,6 @@ module.exports = {
     healthCheck,
     testEmail,
     testEmailWithRetries,
+    testEmailWithSendGrid,
     esPasswordSegura
 };

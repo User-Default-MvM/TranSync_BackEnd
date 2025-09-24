@@ -1,10 +1,39 @@
 // src/utils/emailService.js
 
 const nodemailer = require("nodemailer");
+const sgMail = require('@sendgrid/mail');
 
-// Configuración alternativa para conexiones lentas
+// Configuración optimizada para Railway usando SendGrid
 const createTransporter = () => {
-    // Intentar con configuración SMTP directa primero
+    // Verificar si tenemos API key de SendGrid
+    if (process.env.SENDGRID_API_KEY) {
+        console.log('🚀 Usando SendGrid para envío de emails...');
+        return nodemailer.createTransporter({
+            host: 'smtp.sendgrid.net',
+            port: 587,
+            secure: false, // SendGrid usa STARTTLS
+            auth: {
+                user: 'apikey',
+                pass: process.env.SENDGRID_API_KEY
+            },
+            // Configuración optimizada para SendGrid
+            connectionTimeout: 60000,
+            greetingTimeout: 30000,
+            socketTimeout: 120000,
+            tls: {
+                ciphers: 'SSLv3',
+                rejectUnauthorized: false
+            },
+            pool: true,
+            maxConnections: 5,
+            maxMessages: 100,
+            rateDelta: 1000,
+            rateLimit: 5
+        });
+    }
+
+    // Fallback a Gmail si no hay SendGrid
+    console.log('📧 Usando Gmail SMTP como fallback...');
     const config = {
         host: 'smtp.gmail.com',
         port: 465,
@@ -13,30 +42,25 @@ const createTransporter = () => {
             user: process.env.EMAIL_USER,
             pass: process.env.EMAIL_PASS,
         },
-        // Configuración de timeout ultra permisiva para conexiones muy lentas
-        connectionTimeout: 180000, // 180 segundos (3 minutos)
-        greetingTimeout: 90000,    // 90 segundos (1.5 minutos)
-        socketTimeout: 300000,     // 300 segundos (5 minutos)
-        // Configuración adicional para conexiones lentas
+        // Configuración ultra permisiva para Railway
+        connectionTimeout: 180000,
+        greetingTimeout: 90000,
+        socketTimeout: 300000,
         tls: {
             ciphers: 'SSLv3',
             rejectUnauthorized: false
         },
-        // Configuración para manejar conexiones extremadamente lentas
         pool: true,
         maxConnections: 1,
         maxMessages: 1,
         rateDelta: 5000,
         rateLimit: 1,
-        // Reintentos automáticos
         retry: {
             maxRetries: 5,
             initialDelay: 10000
         },
-        // Configuración adicional para conexiones lentas
         keepAlive: true,
         keepAliveTimeout: 60000,
-        // Configuración de debug
         debug: process.env.NODE_ENV === 'development',
         logger: process.env.NODE_ENV === 'development'
     };
@@ -45,6 +69,31 @@ const createTransporter = () => {
 };
 
 const transporter = createTransporter();
+
+// Configuración de SendGrid Web API (más confiable)
+const sendEmailWithSendGrid = async (to, subject, html) => {
+    if (!process.env.SENDGRID_API_KEY || process.env.SENDGRID_API_KEY === 'SG.your_sendgrid_api_key_here') {
+        throw new Error('SendGrid API key no configurada');
+    }
+
+    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
+    const msg = {
+        to,
+        from: process.env.EMAIL_USER || 'noreply@transync.com',
+        subject,
+        html,
+    };
+
+    try {
+        await sgMail.send(msg);
+        console.log(`✅ Email enviado con SendGrid Web API a: ${to}`);
+        return { success: true };
+    } catch (error) {
+        console.error('❌ Error con SendGrid Web API:', error.response?.body || error.message);
+        throw error;
+    }
+};
 
 /**
  * Envía un correo electrónico con timeout, reintentos y manejo de errores
@@ -57,9 +106,22 @@ const transporter = createTransporter();
 const sendEmail = async (to, subject, html, timeout = 240000, retries = 3) => {
     let lastError;
 
+    // Intentar primero con SendGrid Web API (más confiable)
+    if (process.env.SENDGRID_API_KEY && process.env.SENDGRID_API_KEY !== 'SG.your_sendgrid_api_key_here') {
+        try {
+            console.log(`🚀 Intentando con SendGrid Web API para: ${to}`);
+            const result = await sendEmailWithSendGrid(to, subject, html);
+            return result;
+        } catch (error) {
+            console.log(`⚠️ SendGrid Web API falló: ${error.message}`);
+            lastError = error;
+        }
+    }
+
+    // Fallback a SMTP con reintentos
     for (let attempt = 1; attempt <= retries; attempt++) {
         try {
-            console.log(`📧 Intento ${attempt}/${retries} de envío de email a ${to}`);
+            console.log(`📧 Intento SMTP ${attempt}/${retries} de envío de email a ${to}`);
 
             const result = await new Promise((resolve, reject) => {
                 // Timeout personalizado
@@ -79,7 +141,7 @@ const sendEmail = async (to, subject, html, timeout = 240000, retries = 3) => {
                 })
                 .catch((error) => {
                     clearTimeout(timeoutId);
-                    console.error(`❌ Error en intento ${attempt} al enviar email:`, {
+                    console.error(`❌ Error en intento SMTP ${attempt} al enviar email:`, {
                         to,
                         subject,
                         error: error.message,
@@ -91,17 +153,17 @@ const sendEmail = async (to, subject, html, timeout = 240000, retries = 3) => {
                 });
             });
 
-            console.log(`✅ Email enviado exitosamente en intento ${attempt} a ${to}`);
+            console.log(`✅ Email enviado exitosamente con SMTP en intento ${attempt} a ${to}`);
             return result;
 
         } catch (error) {
             lastError = error;
-            console.log(`⚠️ Intento ${attempt} falló: ${error.message}`);
+            console.log(`⚠️ Intento SMTP ${attempt} falló: ${error.message}`);
 
             // Si no es el último intento, esperar antes de reintentar
             if (attempt < retries) {
-                const delay = Math.min(1000 * Math.pow(2, attempt - 1), 10000); // Backoff exponencial
-                console.log(`⏳ Esperando ${delay}ms antes del siguiente intento...`);
+                const delay = Math.min(2000 * Math.pow(2, attempt - 1), 15000); // Backoff exponencial
+                console.log(`⏳ Esperando ${delay}ms antes del siguiente intento SMTP...`);
                 await new Promise(resolve => setTimeout(resolve, delay));
             }
         }
@@ -113,7 +175,8 @@ const sendEmail = async (to, subject, html, timeout = 240000, retries = 3) => {
         subject,
         finalError: lastError.message,
         code: lastError.code,
-        totalAttempts: retries
+        totalAttempts: retries,
+        sendGridAvailable: !!(process.env.SENDGRID_API_KEY && process.env.SENDGRID_API_KEY !== 'SG.your_sendgrid_api_key_here')
     });
     throw lastError;
 };
@@ -144,4 +207,5 @@ const sendEmailAsync = (to, subject, html) => {
 module.exports = {
     sendEmail,
     sendEmailAsync,
+    sendEmailWithSendGrid,
 };
