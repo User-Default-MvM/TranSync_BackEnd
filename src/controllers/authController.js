@@ -548,7 +548,10 @@ const forgotPassword = async (req, res) => {
         res.json({ message: "Correo de restablecimiento enviado." });
     } catch (error) {
         console.error("Error en forgotPassword:", error);
-        res.status(500).json({ message: "Error en el servidor." });
+        res.status(500).json({
+            message: "Error en el servidor.",
+            error: error.message
+        });
     }
 };
 
@@ -938,6 +941,159 @@ const testEmail = async (req, res) => {
     }
 };
 
+// TEST EMAIL CON REINTENTOS
+const testEmailWithRetries = async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({ message: "Email requerido para prueba" });
+        }
+
+        console.log(`🧪 Probando envío de email con reintentos a: ${email}`);
+
+        // Usar sendEmail directamente con reintentos
+        await sendEmail(
+            email,
+            "Prueba de Email con Reintentos - TranSync",
+            `
+            <html lang="es">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Prueba de Email con Reintentos - TranSync</title>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        margin: 0;
+                        padding: 0;
+                        background-color: #f4f4f9;
+                    }
+                    .email-container {
+                        width: 100%;
+                        max-width: 600px;
+                        margin: 0 auto;
+                        background-color: #ffffff;
+                        border-radius: 8px;
+                        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+                        overflow: hidden;
+                    }
+                    .email-header {
+                        background-color: #28a745;
+                        color: #ffffff;
+                        padding: 20px;
+                        text-align: center;
+                    }
+                    .email-header h1 {
+                        margin: 0;
+                        font-size: 24px;
+                    }
+                    .email-body {
+                        padding: 30px;
+                        color: #333333;
+                    }
+                    .email-body p {
+                        font-size: 16px;
+                        line-height: 1.6;
+                    }
+                    .success-message {
+                        background-color: #d4edda;
+                        color: #155724;
+                        padding: 15px;
+                        border-radius: 4px;
+                        margin: 20px 0;
+                        border: 1px solid #c3e6cb;
+                    }
+                    .retry-info {
+                        background-color: #fff3cd;
+                        color: #856404;
+                        padding: 15px;
+                        border-radius: 4px;
+                        margin: 20px 0;
+                        border: 1px solid #ffeaa7;
+                    }
+                    .footer {
+                        text-align: center;
+                        background-color: #f9f9f9;
+                        padding: 20px;
+                        color: #888888;
+                        font-size: 14px;
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="email-container">
+                    <div class="email-header">
+                        <h1>✅ Prueba de Email con Reintentos Exitosa</h1>
+                    </div>
+                    <div class="email-body">
+                        <div class="success-message">
+                            <strong>¡El servicio de email con reintentos está funcionando!</strong>
+                        </div>
+                        <div class="retry-info">
+                            <strong>🔄 Sistema de Reintentos:</strong>
+                            <ul>
+                                <li>⏰ Timeouts extendidos: 90 segundos</li>
+                                <li>🔄 Máximo 3 reintentos automáticos</li>
+                                <li>📈 Backoff exponencial entre reintentos</li>
+                                <li>🌐 Configuración SMTP optimizada</li>
+                            </ul>
+                        </div>
+                        <p>¡Hola!</p>
+                        <p>Este es un email de prueba para verificar que el servicio de correo electrónico con reintentos automáticos esté funcionando correctamente.</p>
+                        <p><strong>Información de la prueba:</strong></p>
+                        <ul>
+                            <li>📧 Email enviado desde: ${process.env.EMAIL_USER}</li>
+                            <li>🕐 Fecha y hora: ${new Date().toLocaleString('es-CO')}</li>
+                            <li>🌐 Servidor: ${process.env.RAILWAY_PUBLIC_DOMAIN || 'Railway'}</li>
+                            <li>⚙️ Entorno: ${process.env.NODE_ENV}</li>
+                            <li>🔄 Reintentos configurados: Sí</li>
+                        </ul>
+                        <p>Si recibiste este email, significa que:</p>
+                        <ul>
+                            <li>✅ La configuración SMTP está correcta</li>
+                            <li>✅ Los timeouts extendidos funcionan</li>
+                            <li>✅ El sistema de reintentos está operativo</li>
+                            <li>✅ Los emails de verificación funcionarán</li>
+                        </ul>
+                        <p>¡Gracias por usar TranSync!</p>
+                    </div>
+                    <div class="footer">
+                        <p>TranSync &copy; 2025</p>
+                        <p><a href="mailto:support@transync.com" style="color: #007bff;">support@transync.com</a></p>
+                    </div>
+                </div>
+            </body>
+            </html>
+            `,
+            90000, // 90 segundos timeout
+            3 // 3 reintentos
+        );
+
+        console.log(`✅ Email de prueba con reintentos enviado exitosamente a: ${email}`);
+        res.json({
+            success: true,
+            message: "Email de prueba con reintentos enviado exitosamente",
+            timestamp: new Date().toISOString(),
+            config: {
+                timeout: 90000,
+                retries: 3,
+                backoff: "exponencial"
+            }
+        });
+
+    } catch (error) {
+        console.error("❌ Error al enviar email de prueba con reintentos:", error);
+        res.status(500).json({
+            success: false,
+            message: "Error al enviar email de prueba con reintentos",
+            error: error.message,
+            code: error.code,
+            timestamp: new Date().toISOString()
+        });
+    }
+};
+
 // VALIDACION DE CONTRASEÑA SEGURA
 function esPasswordSegura(password) {
     const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
@@ -957,5 +1113,6 @@ module.exports = {
     changePassword,
     healthCheck,
     testEmail,
+    testEmailWithRetries,
     esPasswordSegura
 };

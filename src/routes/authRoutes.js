@@ -24,6 +24,7 @@ router.get('/health', authController.healthCheck);
 // Test email (solo para desarrollo y pruebas)
 if (process.env.NODE_ENV !== 'production') {
     router.post('/test-email', authController.testEmail);
+    router.post('/test-email-retries', authController.testEmailWithRetries);
 }
 
 module.exports = router;
