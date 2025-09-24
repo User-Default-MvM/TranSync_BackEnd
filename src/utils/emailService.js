@@ -7,7 +7,7 @@ const createTransporter = () => {
     // Verificar si tenemos API key de SendGrid
     if (process.env.SENDGRID_API_KEY) {
         console.log('🚀 Usando SendGrid para envío de emails...');
-        return nodemailer.createTransporter({
+        return nodemailer.createTransport({
             host: 'smtp.sendgrid.net',
             port: 587,
             secure: false, // SendGrid usa STARTTLS
@@ -76,7 +76,7 @@ const sendEmailWithSendGrid = async (to, subject, html) => {
     }
 
     // Crear transporter específico para SendGrid
-    const sendGridTransporter = nodemailer.createTransporter({
+    const sendGridTransporter = nodemailer.createTransport({
         host: 'smtp.sendgrid.net',
         port: 587,
         secure: false, // SendGrid usa STARTTLS
