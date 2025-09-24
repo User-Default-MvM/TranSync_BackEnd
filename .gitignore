@@ -1,0 +1,104 @@
+# ==========================================
+# TRANSYNC BACKEND - GITIGNORE
+# ==========================================
+
+# Dependencias de Node.js
+/node_modules
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Archivos de entorno (NUNCA subir credenciales)
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+
+# Logs del sistema
+logs/
+*.log
+*.log.*
+/logs
+
+# Archivos de caché y temporales
+.cache/
+.tmp/
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# Directorios de build/distribución
+dist/
+build/
+out/
+coverage/
+
+# Archivos del sistema operativo
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+ehthumbs_vista.db
+Thumbs.db
+Thumbs.db:encryptable
+desktop.ini
+
+# Configuración de editores/IDEs
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+.atom/
+.history/
+
+# Archivos de lock (opcional, elegir uno por proyecto)
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+
+# Archivos específicos de TransSync
+/public/uploads/
+/src/uploads/
+/backup/
+/scripts/temp/
+
+# Archivos de base de datos locales (si usas SQLite para tests)
+*.sqlite
+*.sqlite3
+*.db
+
+# Archivos de certificados SSL (desarrollo local)
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+
+# Archivos de Docker (si no quieres versionar)
+# docker-compose.override.yml
+# Dockerfile.dev
+
+# Reportes y documentación generada
+/docs/generated/
+/reports/
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+
+# Archivos de configuración específicos del desarrollador
+.eslintcache
+.stylelintcache
