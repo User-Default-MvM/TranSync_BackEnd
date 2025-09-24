@@ -4,12 +4,13 @@ FROM node:18-alpine
 # Install dumb-init for proper signal handling
 RUN apk add --no-cache dumb-init
 
-# Set working directory
-WORKDIR /app
-
 # Create a non-root user first
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nodejs -u 1001
+
+# Set working directory and change ownership
+WORKDIR /app
+RUN chown -R nodejs:nodejs /app
 
 # Copy package files with correct ownership
 COPY --chown=nodejs:nodejs package*.json ./
