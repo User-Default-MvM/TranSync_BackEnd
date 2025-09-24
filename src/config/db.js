@@ -14,7 +14,6 @@ const pool = mysql.createPool({
     queueLimit: 0,
 
     // Configuraciones modernas válidas para MySQL2
-    acquireTimeout: 60000,      // Tiempo máximo para obtener conexión
     idleTimeout: 600000,        // 10 minutos de timeout para conexiones inactivas
     enableKeepAlive: true,      // Mantener conexiones vivas
     keepAliveInitialDelay: 0,   // Iniciar keep-alive inmediatamente
@@ -27,7 +26,7 @@ const pool = mysql.createPool({
     multipleStatements: false,  // Seguridad: prevenir múltiples declaraciones SQL
 
     // Configuración de timeout de conexión (válida)
-    connectTimeout: 20000,      // 20 segundos timeout de conexión
+    connectTimeout: 60000,      // 60 segundos timeout de conexión
 
     // REMOVIDAS las siguientes opciones que causan advertencias:
     // reconnect: true,         // Esta opción está deprecada
