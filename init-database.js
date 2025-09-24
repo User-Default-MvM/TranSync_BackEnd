@@ -96,10 +96,12 @@ async function initializeDatabase() {
                     }
                     console.log(`✅ Declaración ${i + 1}/${validStatements.length} ejecutada`);
                 } catch (error) {
-                    // Ignorar errores de "database exists" o "table exists"
+                    // Ignorar errores de "database exists", "table exists" o "duplicate entry"
                     if (error.code === 'ER_DB_CREATE_EXISTS' ||
                         error.code === 'ER_TABLE_EXISTS_ERROR' ||
-                        error.message.includes('already exists')) {
+                        error.code === 'ER_DUP_ENTRY' ||
+                        error.message.includes('already exists') ||
+                        error.message.includes('Duplicate entry')) {
                         console.log(`⚠️  Declaración ${i + 1}: ${error.message} (ignorado)`);
                     } else {
                         console.error(`❌ Error en declaración ${i + 1}:`, error.message);
