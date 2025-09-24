@@ -1,7 +1,6 @@
 // src/utils/emailService.js
 
 const nodemailer = require("nodemailer");
-const sgMail = require('@sendgrid/mail');
 
 // Configuración optimizada para Railway usando SendGrid
 const createTransporter = () => {
@@ -70,27 +69,48 @@ const createTransporter = () => {
 
 const transporter = createTransporter();
 
-// Configuración de SendGrid Web API (más confiable)
+// Configuración de SendGrid SMTP (más confiable que Gmail)
 const sendEmailWithSendGrid = async (to, subject, html) => {
     if (!process.env.SENDGRID_API_KEY || process.env.SENDGRID_API_KEY === 'SG.your_sendgrid_api_key_here') {
         throw new Error('SendGrid API key no configurada');
     }
 
-    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-
-    const msg = {
-        to,
-        from: process.env.EMAIL_USER || 'noreply@transync.com',
-        subject,
-        html,
-    };
+    // Crear transporter específico para SendGrid
+    const sendGridTransporter = nodemailer.createTransporter({
+        host: 'smtp.sendgrid.net',
+        port: 587,
+        secure: false, // SendGrid usa STARTTLS
+        auth: {
+            user: 'apikey',
+            pass: process.env.SENDGRID_API_KEY
+        },
+        // Configuración optimizada para SendGrid
+        connectionTimeout: 30000,
+        greetingTimeout: 15000,
+        socketTimeout: 60000,
+        tls: {
+            ciphers: 'SSLv3',
+            rejectUnauthorized: false
+        },
+        pool: true,
+        maxConnections: 5,
+        maxMessages: 100,
+        rateDelta: 1000,
+        rateLimit: 5
+    });
 
     try {
-        await sgMail.send(msg);
-        console.log(`✅ Email enviado con SendGrid Web API a: ${to}`);
-        return { success: true };
+        const result = await sendGridTransporter.sendMail({
+            from: `"TranSync" <${process.env.EMAIL_USER || 'noreply@transync.com'}>`,
+            to,
+            subject,
+            html,
+        });
+
+        console.log(`✅ Email enviado con SendGrid SMTP a: ${to}`);
+        return result;
     } catch (error) {
-        console.error('❌ Error con SendGrid Web API:', error.response?.body || error.message);
+        console.error('❌ Error con SendGrid SMTP:', error.message);
         throw error;
     }
 };
@@ -207,5 +227,4 @@ const sendEmailAsync = (to, subject, html) => {
 module.exports = {
     sendEmail,
     sendEmailAsync,
-    sendEmailWithSendGrid,
 };

@@ -3,7 +3,7 @@
 const pool = require("../config/db");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const { sendEmail, sendEmailAsync, sendEmailWithSendGrid } = require("../utils/emailService");
+const { sendEmail, sendEmailAsync } = require("../utils/emailService");
 
 
 // REGISTRO DE USUARIO
@@ -1103,10 +1103,10 @@ const testEmailWithSendGrid = async (req, res) => {
             return res.status(400).json({ message: "Email requerido para prueba" });
         }
 
-        console.log(`🚀 Probando envío de email con SendGrid Web API a: ${email}`);
+        console.log(`🚀 Probando envío de email con SendGrid SMTP a: ${email}`);
 
-        // Usar SendGrid Web API directamente
-        await sendEmailWithSendGrid(
+        // Usar SendGrid SMTP (ya integrado en sendEmail)
+        await sendEmail(
             email,
             "Prueba de Email con SendGrid - TranSync",
             `
@@ -1181,12 +1181,12 @@ const testEmailWithSendGrid = async (req, res) => {
                     </div>
                     <div class="email-body">
                         <div class="success-message">
-                            <strong>¡SendGrid Web API está funcionando perfectamente!</strong>
+                            <strong>¡SendGrid SMTP está funcionando perfectamente!</strong>
                         </div>
                         <div class="sendgrid-info">
-                            <strong>🚀 SendGrid Web API:</strong>
+                            <strong>🚀 SendGrid SMTP:</strong>
                             <ul>
-                                <li>⚡ Respuesta inmediata (sin timeouts)</li>
+                                <li>⚡ Respuesta rápida (sin timeouts largos)</li>
                                 <li>🌐 Optimizado para Railway</li>
                                 <li>📊 Entrega garantizada</li>
                                 <li>🔒 Seguridad de nivel empresarial</li>
@@ -1221,13 +1221,13 @@ const testEmailWithSendGrid = async (req, res) => {
             `
         );
 
-        console.log(`✅ Email de prueba con SendGrid Web API enviado exitosamente a: ${email}`);
+        console.log(`✅ Email de prueba con SendGrid SMTP enviado exitosamente a: ${email}`);
         res.json({
             success: true,
-            message: "Email de prueba con SendGrid Web API enviado exitosamente",
+            message: "Email de prueba con SendGrid SMTP enviado exitosamente",
             timestamp: new Date().toISOString(),
-            service: "SendGrid Web API",
-            responseTime: "Instantáneo"
+            service: "SendGrid SMTP",
+            responseTime: "Rápido"
         });
 
     } catch (error) {
@@ -1238,7 +1238,7 @@ const testEmailWithSendGrid = async (req, res) => {
             error: error.message,
             code: error.code,
             timestamp: new Date().toISOString(),
-            service: "SendGrid Web API"
+            service: "SendGrid SMTP"
         });
     }
 };
@@ -1263,6 +1263,5 @@ module.exports = {
     healthCheck,
     testEmail,
     testEmailWithRetries,
-    testEmailWithSendGrid,
     esPasswordSegura
 };
