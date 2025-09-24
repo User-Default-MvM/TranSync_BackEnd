@@ -3,12 +3,14 @@
 const pool = require("../config/db");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const { sendEmail } = require("../utils/emailService");
+const { sendEmail, sendEmailAsync } = require("../utils/emailService");
 
 
 // REGISTRO DE USUARIO
 const register = async (req, res) => {
-    console.log("BODY RECIBIDO:", req.body);
+    console.log("🔄 Iniciando registro de usuario");
+    console.log("📝 Datos recibidos:", req.body);
+    
     const { nomUsuario, apeUsuario, numDocUsuario, telUsuario, email, password } = req.body;
     const idEmpresa = 1; // Empresa por defecto
 
@@ -17,6 +19,7 @@ const register = async (req, res) => {
     const missingFields = requiredFields.filter(field => !req.body[field]);
 
     if (missingFields.length > 0) {
+        console.log("❌ Campos faltantes:", missingFields);
         return res.status(400).json({
             message: `Campos requeridos faltantes: ${missingFields.join(', ')}`
         });
@@ -25,56 +28,72 @@ const register = async (req, res) => {
     // Validar formato de email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
+        console.log("❌ Formato de email inválido:", email);
         return res.status(400).json({ message: 'Formato de email inválido' });
     }
 
     // Validar contraseña segura (mínimo 6 caracteres)
     if (password && password.length < 6) {
+        console.log("❌ Contraseña muy corta");
         return res.status(400).json({ message: 'La contraseña debe tener al menos 6 caracteres' });
     }
 
+    console.log("✅ Validaciones pasadas, obteniendo conexión a BD");
     const connection = await pool.getConnection();
+    
     try {
         await connection.beginTransaction();
+        console.log("🔄 Transacción iniciada");
 
+        console.log("🔍 Verificando usuario existente...");
         const [existingUser] = await connection.query(
             "SELECT idUsuario FROM Usuarios WHERE email = ? OR numDocUsuario = ?",
             [email, numDocUsuario]
         );
         if (existingUser.length > 0) {
             await connection.rollback();
+            console.log("❌ Usuario ya existe");
             return res.status(409).json({ message: "El correo o documento ya está registrado." });
         }
 
+        console.log("🔍 Buscando rol CONDUCTOR...");
         const [roleResult] = await connection.query(
             "SELECT idRol FROM Roles WHERE nomRol = 'CONDUCTOR'"
         );
         if (roleResult.length === 0) {
             await connection.rollback();
+            console.log("❌ Rol CONDUCTOR no encontrado");
             return res.status(500).json({ message: "Rol CONDUCTOR no encontrado." });
         }
 
         const idRol = roleResult[0].idRol;
+        console.log("✅ Rol encontrado, ID:", idRol);
+
+        console.log("🔐 Generando hash de contraseña...");
         const salt = await bcrypt.genSalt(10);
         const passwordHash = await bcrypt.hash(password, salt);
 
+        console.log("💾 Insertando usuario en BD...");
         const [userResult] = await connection.query(
-            `INSERT INTO Usuarios 
-            (email, passwordHash, nomUsuario, apeUsuario, numDocUsuario, telUsuario, idRol, idEmpresa) 
+            `INSERT INTO Usuarios
+            (email, passwordHash, nomUsuario, apeUsuario, numDocUsuario, telUsuario, idRol, idEmpresa)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
             [email, passwordHash, nomUsuario, apeUsuario, numDocUsuario, telUsuario, idRol, idEmpresa]
         );
 
         const newUserId = userResult.insertId;
+        console.log("✅ Usuario creado con ID:", newUserId);
 
         // Generar token de verificación y construir URL
+        console.log("🔑 Generando token de verificación...");
         const verifyToken = jwt.sign({ id: newUserId }, process.env.JWT_SECRET, { expiresIn: '1d' });
         const baseUrl = process.env.NODE_ENV === 'production'
             ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN || 'your-app.railway.app'}`
             : 'http://localhost:5000';
         const verifyUrl = `${baseUrl}/api/auth/verify?token=${verifyToken}`;
 
-        await sendEmail(
+        // Enviar email de verificación de forma asíncrona (no bloquea la respuesta)
+        sendEmailAsync(
             email,
             "Verifica Tu Cuenta De Transync",
             `
@@ -167,7 +186,10 @@ const register = async (req, res) => {
             `
         );
 
+        console.log("✅ Transacción completada, enviando respuesta...");
         await connection.commit();
+
+        console.log("🎉 Registro completado exitosamente");
         res
             .status(201)
             .json({
@@ -176,12 +198,14 @@ const register = async (req, res) => {
             });
     } catch (error) {
         await connection.rollback();
-        console.error("Error en el registro:", error);
+        console.error("❌ Error en el registro:", error);
+        console.error("📝 Stack trace:", error.stack);
         res
             .status(500)
             .json({ message: "Error al registrar usuario." });
     } finally {
         connection.release();
+        console.log("🔌 Conexión liberada");
     }
 };
 

@@ -64,6 +64,7 @@ const corsOptions = {
       'https://www.transync.com',     // Dominio producción con www
       'https://api.transync.com',     // API en producción
       'https://transync1.netlify.app', // Frontend en Netlify
+      'https://transync1.netlify.app/home', // Frontend en Netlify con ruta
       process.env.FRONTEND_URL,       // URL del frontend desde .env
     ].filter(Boolean); // Filtrar valores undefined/null
 
