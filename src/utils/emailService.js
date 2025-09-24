@@ -3,15 +3,15 @@
 const nodemailer = require("nodemailer");
 
 const transporter = nodemailer.createTransport({
-    service: "Gmail", 
+    service: "Gmail",
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
     },
-    // Configuración de timeout
-    connectionTimeout: 10000, // 10 segundos
-    greetingTimeout: 5000,    // 5 segundos
-    socketTimeout: 15000,     // 15 segundos
+    // Configuración de timeout más permisiva
+    connectionTimeout: 30000, // 30 segundos
+    greetingTimeout: 15000,   // 15 segundos
+    socketTimeout: 60000,     // 60 segundos
 });
 
 /**
@@ -21,7 +21,7 @@ const transporter = nodemailer.createTransport({
  * @param {string} html - Contenido en HTML
  * @param {number} timeout - Timeout en milisegundos (default: 15000)
  */
-const sendEmail = async (to, subject, html, timeout = 15000) => {
+const sendEmail = async (to, subject, html, timeout = 30000) => {
     return new Promise((resolve, reject) => {
         // Timeout personalizado
         const timeoutId = setTimeout(() => {
@@ -55,7 +55,7 @@ const sendEmailAsync = (to, subject, html) => {
     // Enviar email en background sin bloquear
     setImmediate(async () => {
         try {
-            await sendEmail(to, subject, html, 10000); // 10 segundos timeout
+            await sendEmail(to, subject, html, 20000); // 20 segundos timeout
             console.log(`✅ Email enviado exitosamente a: ${to}`);
         } catch (error) {
             console.error(`❌ Error enviando email a ${to}:`, error.message);
