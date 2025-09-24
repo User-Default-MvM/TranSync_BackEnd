@@ -341,7 +341,7 @@ CREATE TABLE IF NOT EXISTS RespuestasPredefinidas (
 -- INSERCION DE DATOS INICIALES PARA LAS DIFERENTES TABLAS DEL SISTEMA EN ORDEN DE DEPENDENCIA.
 -- Tabla #1
 -- Insercion de datos en la tabla Roles.
-INSERT INTO Roles (nomRol) VALUES
+INSERT IGNORE INTO Roles (nomRol) VALUES
 -- idRol 1.
 ('SUPERADMIN'),
 -- idRol2.
@@ -350,14 +350,14 @@ INSERT INTO Roles (nomRol) VALUES
 ('CONDUCTOR');
 
 -- Tabla #2
-INSERT INTO Empresas (nomEmpresa, nitEmpresa, dirEmpresa, emaEmpresa, telEmpresa)
+INSERT IGNORE INTO Empresas (nomEmpresa, nitEmpresa, dirEmpresa, emaEmpresa, telEmpresa)
 VALUES
     -- idEmpresa = 1.
     ('Expreso La Sabana S.A.S', '901234567', ' Dg. 23 #69 60, Bogotá', 'expresolasabana@gmail.com', '3021234567');
 
 -- Tabla #3
 -- Insercion de Usuarios.
-INSERT INTO Usuarios (email, nomUsuario, apeUsuario, numDocUsuario, telUsuario, passwordHash, idRol, idEmpresa, estActivo)
+INSERT IGNORE INTO Usuarios (email, nomUsuario, apeUsuario, numDocUsuario, telUsuario, passwordHash, idRol, idEmpresa, estActivo)
 VALUES
     -- Password: admin123
     -- Email, nombre(s), apellido(s), numero de documento, telefono, contraseña hash, idRol, idEmpresa y estadoActivo (0=False, 1=True) del Usuario.
@@ -392,7 +392,7 @@ VALUES
 
 -- Tabla #4
 -- Insertar conductores de ejemplo
-INSERT INTO Conductores (idUsuario, tipLicConductor, fecVenLicConductor, estConductor, idEmpresa)
+INSERT IGNORE INTO Conductores (idUsuario, tipLicConductor, fecVenLicConductor, estConductor, idEmpresa)
 VALUES
         -- idUsuario, tipo de licencia, fecha de vencimiento de la licencia, estado del Conductor y Empresa a la que pertencece de momento solo existe una empresa 1.
         (5,'B1','2026-05-15', 'ACTIVO', 1),
@@ -403,7 +403,7 @@ VALUES
 
 -- Tabla #5
 -- Insertar rutas de ejemplo
-INSERT INTO Rutas (nomRuta, oriRuta, desRuta, idEmpresa) 
+INSERT IGNORE INTO Rutas (nomRuta, oriRuta, desRuta, idEmpresa)
 VALUES
     ('Ruta Norte-Centro', 'Terminal Norte Bogotá', 'Centro Internacional Bogotá', 1),
     ('Expreso Medellín-Rionegro', 'Terminal Sur Medellín', 'Aeropuerto José María Córdova', 1),
@@ -413,7 +413,7 @@ VALUES
     ('Ruta Norte-Sur', 'Portal Norte', 'Portal Sur', 1);
 
 -- Insertar vehículos de ejemplo
-INSERT INTO Vehiculos (numVehiculo, plaVehiculo, marVehiculo, modVehiculo, anioVehiculo, fecVenSOAT, fecVenTec, estVehiculo, idEmpresa) 
+INSERT IGNORE INTO Vehiculos (numVehiculo, plaVehiculo, marVehiculo, modVehiculo, anioVehiculo, fecVenSOAT, fecVenTec, estVehiculo, idEmpresa)
 VALUES
     -- idVehiculo = 1.
     ('BUS001', 'TSX123', 'Chevrolet', 'NPR Busetón', 2021, '2025-12-10', '2026-01-15', 'EN_RUTA', 1),
@@ -428,7 +428,7 @@ VALUES
 
 
 -- Insertar viajes de ejemplo
-INSERT INTO Viajes (idVehiculo, idConductor, idRuta, fecHorSalViaje, fecHorLleViaje, estViaje, obsViaje) 
+INSERT IGNORE INTO Viajes (idVehiculo, idConductor, idRuta, fecHorSalViaje, fecHorLleViaje, estViaje, obsViaje)
 VALUES
     -- Viaje 1
 (1, 5, 1, '2025-09-22 08:00:00', '2025-09-22 09:00:00', 'EN_CURSO', 'Viaje de prueba con conductor activo'),
@@ -449,7 +449,7 @@ VALUES
 (4, 1, 6, '2025-09-23 14:00:00', '2025-09-23 15:45:00', 'PROGRAMADO', 'Ruta completa Norte-Sur');
 
 -- Insertar interacciones del chatbot (10 ejemplos)
-INSERT INTO InteraccionesChatbot (mensaje, respuesta, intencion, idEmpresa, idUsuario, tiempoRespuesta, exitosa, valoracion, ipUsuario) 
+INSERT IGNORE INTO InteraccionesChatbot (mensaje, respuesta, intencion, idEmpresa, idUsuario, tiempoRespuesta, exitosa, valoracion, ipUsuario)
 VALUES
     ('Hola, ¿cómo estás?', '¡Hola! Soy tu asistente de TransSync. ¿En qué puedo ayudarte hoy?', 'saludo', 1, 1, 120, 1, 5, '192.168.1.100'),
     ('¿Cuáles son los conductores disponibles?', 'Actualmente tenemos 3 conductores activos: Pedro García, María López y Juan Hernández.', 'conductores', 1, 2, 85, 1, 4, '192.168.1.101'),
@@ -463,11 +463,11 @@ VALUES
     ('¿Hay algún problema con el sistema?', 'El sistema está funcionando correctamente. ¿Hay algo específico que te preocupa?', 'ayuda', 1, 2, 140, 1, 4, '192.168.1.109');
 
 -- Insertar configuración del chatbot (para cada empresa)
-INSERT INTO ConfiguracionChatbot (idEmpresa, mensajeBienvenida, mensajeNoComprendido, mensajeDespedida) VALUES
+INSERT IGNORE INTO ConfiguracionChatbot (idEmpresa, mensajeBienvenida, mensajeNoComprendido, mensajeDespedida) VALUES
 (1, '¡Hola! Soy tu asistente virtual de TransSync. ¿En qué puedo ayudarte hoy con tu flota de transporte?', 'Lo siento, no pude entender tu consulta. ¿Puedes ser más específico o reformular tu pregunta?', '¡Gracias por usar TransSync! Que tengas un excelente día.');
 
 -- Insertar respuestas predefinidas (15 ejemplos)
-INSERT INTO RespuestasPredefinidas (idEmpresa, palabrasClave, categoria, respuesta, prioridad, activa) VALUES
+INSERT IGNORE INTO RespuestasPredefinidas (idEmpresa, palabrasClave, categoria, respuesta, prioridad, activa) VALUES
 (1, 'hola,saludos,buenos dias,buenas tardes,buenas noches', 'saludo', '¡Hola! Soy tu asistente virtual de TransSync. ¿En qué puedo ayudarte hoy?', 10, 1),
 (1, 'conductores,choferes,pilotos,disponibles,activos', 'conductores', 'Actualmente tenemos conductores activos: Pedro García, María López, Juan Hernández, Sofia Torres y Diego Ramírez.', 9, 1),
 (1, 'vehiculos,camiones,carros,flota,disponibles', 'vehiculos', 'Nuestra flota incluye: Chevrolet Spark GT (ABC123), Renault Logan (DEF456), Toyota Corolla (GHI789), Nissan Sentra (JKL012) y Mazda CX-5 (MNO345).', 9, 1),
@@ -534,19 +534,19 @@ CREATE TABLE IF NOT EXISTS UserActivity (
 -- =====================================================
 
 -- Insertar preferencias de usuario para algunos usuarios
-INSERT INTO UserPreferences (idUsuario, preferences) VALUES
+INSERT IGNORE INTO UserPreferences (idUsuario, preferences) VALUES
 (1, '{"theme": "dark", "language": "es", "notifications": {"email": true, "push": false, "sms": true}, "dashboard": {"defaultView": "overview", "itemsPerPage": 15, "autoRefresh": true}}'),
 (2, '{"theme": "light", "language": "es", "notifications": {"email": true, "push": true, "sms": false}, "dashboard": {"defaultView": "analytics", "itemsPerPage": 20, "autoRefresh": false}}'),
 (3, '{"theme": "dark", "language": "es", "notifications": {"email": true, "push": true, "sms": true}, "dashboard": {"defaultView": "overview", "itemsPerPage": 10, "autoRefresh": true}}');
 
 -- Insertar configuración de notificaciones para algunos usuarios
-INSERT INTO NotificationSettings (idUsuario, notificationSettings) VALUES
+INSERT IGNORE INTO NotificationSettings (idUsuario, notificationSettings) VALUES
 (1, '{"newMessages": true, "systemUpdates": true, "securityAlerts": true, "maintenanceReminders": false, "reportNotifications": true, "emailFrequency": "immediate"}'),
 (2, '{"newMessages": true, "systemUpdates": false, "securityAlerts": true, "maintenanceReminders": true, "reportNotifications": false, "emailFrequency": "daily"}'),
 (3, '{"newMessages": true, "systemUpdates": true, "securityAlerts": false, "maintenanceReminders": true, "reportNotifications": true, "emailFrequency": "weekly"}');
 
 -- Insertar actividad de usuario para algunos usuarios
-INSERT INTO UserActivity (idUsuario, type, description, ipAddress, userAgent) VALUES
+INSERT IGNORE INTO UserActivity (idUsuario, type, description, ipAddress, userAgent) VALUES
 (1, 'login', 'Inicio de sesión exitoso', '192.168.1.100', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'),
 (1, 'profile_update', 'Actualización de perfil personal', '192.168.1.100', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'),
 (1, 'password_change', 'Cambio de contraseña exitoso', '192.168.1.100', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'),

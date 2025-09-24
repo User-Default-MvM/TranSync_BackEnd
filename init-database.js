@@ -130,10 +130,33 @@ async function initializeDatabase() {
         const [users] = await connection.execute('SELECT COUNT(*) as count FROM Usuarios');
         const [companies] = await connection.execute('SELECT COUNT(*) as count FROM Empresas');
         const [roles] = await connection.execute('SELECT COUNT(*) as count FROM Roles');
-        
+
         console.log(`👥 Usuarios: ${users[0].count}`);
         console.log(`🏢 Empresas: ${companies[0].count}`);
         console.log(`🔐 Roles: ${roles[0].count}`);
+
+        // Verificar si ya existen datos iniciales para evitar duplicados
+        const [existingRoles] = await connection.execute('SELECT COUNT(*) as count FROM Roles WHERE nomRol IN ("SUPERADMIN", "GESTOR", "CONDUCTOR")');
+        const [existingCompany] = await connection.execute('SELECT COUNT(*) as count FROM Empresas WHERE nitEmpresa = "901234567"');
+        const [existingAdmin] = await connection.execute('SELECT COUNT(*) as count FROM Usuarios WHERE email = "admintransync@gmail.com"');
+
+        if (existingRoles[0].count === 0) {
+            console.log('📝 Insertando roles iniciales...');
+        } else {
+            console.log('⚠️  Roles iniciales ya existen, omitiendo inserción');
+        }
+
+        if (existingCompany[0].count === 0) {
+            console.log('📝 Insertando empresa inicial...');
+        } else {
+            console.log('⚠️  Empresa inicial ya existe, omitiendo inserción');
+        }
+
+        if (existingAdmin[0].count === 0) {
+            console.log('📝 Insertando usuarios iniciales...');
+        } else {
+            console.log('⚠️  Usuarios iniciales ya existen, omitiendo inserción');
+        }
 
         console.log('🎉 ¡Base de datos lista para usar!');
 
