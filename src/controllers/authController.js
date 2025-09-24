@@ -332,7 +332,7 @@ const forgotPassword = async (req, res) => {
 
         const resetToken = jwt.sign({ id: userId }, process.env.JWT_SECRET, { expiresIn: "15m" });
 
-        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+        const frontendUrl = process.env.FRONTEND_URL || `https://${process.env.RAILWAY_PUBLIC_DOMAIN || 'your-app.railway.app'}`;
         const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
 
         // Enviar correo
