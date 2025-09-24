@@ -18,7 +18,7 @@ COPY --chown=nodejs:nodejs package*.json ./
 USER nodejs
 
 # Install dependencies
-RUN npm ci --only=production && npm cache clean --force
+RUN npm ci --omit=dev && npm cache clean --force
 
 # Copy source code with correct ownership
 COPY --chown=nodejs:nodejs . .
