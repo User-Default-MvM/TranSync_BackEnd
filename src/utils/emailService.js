@@ -13,26 +13,32 @@ const createTransporter = () => {
             user: process.env.EMAIL_USER,
             pass: process.env.EMAIL_PASS,
         },
-        // Configuración de timeout más permisiva para conexiones lentas
-        connectionTimeout: 60000,  // 60 segundos
-        greetingTimeout: 30000,    // 30 segundos
-        socketTimeout: 120000,     // 120 segundos
+        // Configuración de timeout ultra permisiva para conexiones muy lentas
+        connectionTimeout: 180000, // 180 segundos (3 minutos)
+        greetingTimeout: 90000,    // 90 segundos (1.5 minutos)
+        socketTimeout: 300000,     // 300 segundos (5 minutos)
         // Configuración adicional para conexiones lentas
         tls: {
             ciphers: 'SSLv3',
             rejectUnauthorized: false
         },
-        // Configuración para manejar conexiones lentas
+        // Configuración para manejar conexiones extremadamente lentas
         pool: true,
         maxConnections: 1,
         maxMessages: 1,
-        rateDelta: 2000,
+        rateDelta: 5000,
         rateLimit: 1,
         // Reintentos automáticos
         retry: {
-            maxRetries: 3,
-            initialDelay: 5000
-        }
+            maxRetries: 5,
+            initialDelay: 10000
+        },
+        // Configuración adicional para conexiones lentas
+        keepAlive: true,
+        keepAliveTimeout: 60000,
+        // Configuración de debug
+        debug: process.env.NODE_ENV === 'development',
+        logger: process.env.NODE_ENV === 'development'
     };
 
     return nodemailer.createTransport(config);
@@ -48,7 +54,7 @@ const transporter = createTransporter();
  * @param {number} timeout - Timeout en milisegundos (default: 90000)
  * @param {number} retries - Número de reintentos (default: 3)
  */
-const sendEmail = async (to, subject, html, timeout = 90000, retries = 3) => {
+const sendEmail = async (to, subject, html, timeout = 240000, retries = 3) => {
     let lastError;
 
     for (let attempt = 1; attempt <= retries; attempt++) {
@@ -122,7 +128,7 @@ const sendEmailAsync = (to, subject, html) => {
     // Enviar email en background sin bloquear
     setImmediate(async () => {
         try {
-            await sendEmail(to, subject, html, 60000); // 60 segundos timeout
+            await sendEmail(to, subject, html, 180000); // 180 segundos timeout
             console.log(`✅ Email enviado exitosamente a: ${to}`);
         } catch (error) {
             console.error(`❌ Error enviando email a ${to}:`, {

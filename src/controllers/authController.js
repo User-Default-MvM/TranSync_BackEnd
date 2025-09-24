@@ -1066,7 +1066,7 @@ const testEmailWithRetries = async (req, res) => {
             </body>
             </html>
             `,
-            90000, // 90 segundos timeout
+            240000, // 240 segundos timeout (4 minutos)
             3 // 3 reintentos
         );
 
