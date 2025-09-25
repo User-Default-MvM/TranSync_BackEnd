@@ -69,7 +69,10 @@ const register = async (req, res) => {
 
         // Generar token de verificación y construir URL
         const verifyToken = jwt.sign({ id: newUserId }, process.env.JWT_SECRET, { expiresIn: '1d' });
-        const verifyUrl = `http://localhost:5000/api/auth/verify?token=${verifyToken}`;
+        const baseUrl = process.env.NODE_ENV === 'production'
+            ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN || 'your-app.railway.app'}`
+            : 'http://localhost:5000';
+        const verifyUrl = `${baseUrl}/api/auth/verify?token=${verifyToken}`;
 
         await sendEmail(
             email,
@@ -305,7 +308,8 @@ const forgotPassword = async (req, res) => {
 
         const resetToken = jwt.sign({ id: userId }, process.env.JWT_SECRET, { expiresIn: "15m" });
 
-        const resetUrl = `http://localhost:3000/reset-password?token=${resetToken}`;
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+        const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
 
         // Enviar correo
         await sendEmail(
@@ -668,6 +672,124 @@ const healthCheck = async (req, res) => {
     }
 };
 
+// TEST EMAIL SERVICE
+const testEmailService = async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({
+                message: "Email es requerido para la prueba"
+            });
+        }
+
+        // Validar formato de email
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            return res.status(400).json({
+                message: 'Formato de email inválido'
+            });
+        }
+
+        // Verificar configuración del email service
+        const { verifyEmailConfig } = require("../utils/emailService");
+
+        const emailConfigOk = await verifyEmailConfig();
+        if (!emailConfigOk) {
+            return res.status(503).json({
+                message: "Servicio de email no está configurado correctamente"
+            });
+        }
+
+        // Enviar correo de prueba
+        const { sendEmail } = require("../utils/emailService");
+
+        const testHtml = `
+            <html lang="es">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Prueba de Email - TranSync</title>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        margin: 0;
+                        padding: 0;
+                        background-color: #f4f4f9;
+                    }
+                    .email-container {
+                        width: 100%;
+                        max-width: 600px;
+                        margin: 0 auto;
+                        background-color: #ffffff;
+                        border-radius: 8px;
+                        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+                        overflow: hidden;
+                    }
+                    .email-header {
+                        background-color: #28a745;
+                        color: #ffffff;
+                        padding: 20px;
+                        text-align: center;
+                    }
+                    .email-body {
+                        padding: 30px;
+                        color: #333333;
+                    }
+                    .success-icon {
+                        font-size: 48px;
+                        color: #28a745;
+                        text-align: center;
+                        margin: 20px 0;
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="email-container">
+                    <div class="email-header">
+                        <h1>✅ Prueba de Email Exitosa</h1>
+                    </div>
+                    <div class="email-body">
+                        <div class="success-icon">📧</div>
+                        <p><strong>¡Excelente!</strong> El servicio de email de TranSync está funcionando correctamente.</p>
+                        <p>Este es un correo de prueba enviado desde el entorno de producción.</p>
+                        <p><strong>Información del sistema:</strong></p>
+                        <ul>
+                            <li>🌐 Entorno: ${process.env.NODE_ENV || 'development'}</li>
+                            <li>📧 Servicio: ${process.env.SENDGRID_API_KEY ? 'SendGrid' : 'Gmail'}</li>
+                            <li>⏰ Timestamp: ${new Date().toISOString()}</li>
+                            <li>🔗 Servidor: ${process.env.RAILWAY_PUBLIC_DOMAIN || 'localhost'}</li>
+                        </ul>
+                        <p>Si recibiste este correo, significa que el sistema de verificación de cuentas está funcionando correctamente.</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+        `;
+
+        await sendEmail(
+            email,
+            "🧪 Prueba de Servicio de Email - TranSync",
+            testHtml
+        );
+
+        res.json({
+            success: true,
+            message: "Correo de prueba enviado exitosamente",
+            timestamp: new Date().toISOString(),
+            emailService: process.env.SENDGRID_API_KEY ? 'SendGrid' : 'Gmail',
+            environment: process.env.NODE_ENV || 'development'
+        });
+
+    } catch (error) {
+        console.error("Error en test email service:", error);
+        res.status(500).json({
+            message: "Error al enviar correo de prueba",
+            error: process.env.NODE_ENV === 'development' ? error.message : 'Error interno del servidor'
+        });
+    }
+};
+
 // VALIDACION DE CONTRASEÑA SEGURA
 function esPasswordSegura(password) {
     const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
@@ -686,5 +808,6 @@ module.exports = {
     updateProfile,
     changePassword,
     healthCheck,
+    testEmailService,
     esPasswordSegura
 };

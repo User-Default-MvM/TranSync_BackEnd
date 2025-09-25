@@ -21,4 +21,12 @@ router.put('/change-password', authMiddleware, authController.changePassword);
 // Health check
 router.get('/health', authController.healthCheck);
 
+// Test email service (solo en desarrollo o con autenticación)
+if (process.env.NODE_ENV === 'development') {
+    router.post('/test-email', authController.testEmailService);
+} else {
+    // En producción, requerir autenticación para el test
+    router.post('/test-email', authMiddleware, authController.testEmailService);
+}
+
 module.exports = router;
