@@ -158,6 +158,47 @@ async function initializeDatabase() {
             console.log('⚠️  Usuarios iniciales ya existen, omitiendo inserción');
         }
 
+        // Verificar y crear tabla PasswordResets si no existe
+        console.log('🔍 Verificando tabla PasswordResets...');
+        const [passwordResetTables] = await connection.execute(`
+            SELECT TABLE_NAME
+            FROM INFORMATION_SCHEMA.TABLES
+            WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'PasswordResets'
+        `, [process.env.DB_DATABASE || 'railway']);
+
+        if (passwordResetTables.length === 0) {
+            console.log('📋 Creando tabla PasswordResets...');
+
+            await connection.execute(`
+                CREATE TABLE PasswordResets (
+                    id INT AUTO_INCREMENT NOT NULL PRIMARY KEY,
+                    userId INT NOT NULL,
+                    token VARCHAR(64) NOT NULL UNIQUE,
+                    expiresAt DATETIME NOT NULL,
+                    used BOOLEAN DEFAULT FALSE,
+                    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    INDEX idx_user_id (userId),
+                    INDEX idx_token (token),
+                    INDEX idx_expires_at (expiresAt),
+                    INDEX idx_used (used),
+                    FOREIGN KEY (userId) REFERENCES Usuarios(idUsuario) ON DELETE CASCADE
+                )
+            `);
+
+            console.log('✅ Tabla PasswordResets creada exitosamente');
+        } else {
+            console.log('ℹ️  La tabla PasswordResets ya existe');
+        }
+
+        // Limpiar tokens expirados (mantenimiento)
+        const [result] = await connection.execute(
+            'DELETE FROM PasswordResets WHERE expiresAt < NOW() OR used = true'
+        );
+
+        if (result.affectedRows > 0) {
+            console.log(`🧹 Eliminados ${result.affectedRows} tokens expirados o usados`);
+        }
+
         console.log('🎉 ¡Base de datos lista para usar!');
 
     } catch (error) {

@@ -545,6 +545,31 @@ INSERT IGNORE INTO NotificationSettings (idUsuario, notificationSettings) VALUES
 (2, '{"newMessages": true, "systemUpdates": false, "securityAlerts": true, "maintenanceReminders": true, "reportNotifications": false, "emailFrequency": "daily"}'),
 (3, '{"newMessages": true, "systemUpdates": true, "securityAlerts": false, "maintenanceReminders": true, "reportNotifications": true, "emailFrequency": "weekly"}');
 
+-- =====================================================
+-- TABLA PARA TOKENS DE RESTABLECIMIENTO DE CONTRASEÑA
+-- =====================================================
+
+-- -----------------------------------------------------
+-- Tabla: PasswordResets
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS PasswordResets (
+    id INT AUTO_INCREMENT NOT NULL PRIMARY KEY,
+    userId INT NOT NULL,
+    token VARCHAR(64) NOT NULL UNIQUE,
+    expiresAt DATETIME NOT NULL,
+    used BOOLEAN DEFAULT FALSE,
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_user_id (userId),
+    INDEX idx_token (token),
+    INDEX idx_expires_at (expiresAt),
+    INDEX idx_used (used),
+    FOREIGN KEY (userId) REFERENCES Usuarios(idUsuario) ON DELETE CASCADE
+);
+
+-- =====================================================
+-- DATOS DE PRUEBA PARA PERFIL DE USUARIO
+-- =====================================================
+
 -- Insertar actividad de usuario para algunos usuarios
 INSERT IGNORE INTO UserActivity (idUsuario, type, description, ipAddress, userAgent) VALUES
 (1, 'login', 'Inicio de sesión exitoso', '192.168.1.100', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'),

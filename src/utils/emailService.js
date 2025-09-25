@@ -80,7 +80,7 @@ const sendEmailWithSendGrid = async (to, subject, html, maxRetries = 3) => {
 
             const msg = {
                 to,
-                from: process.env.EMAIL_USER || 'noreply@transync.com',
+                from: process.env.EMAIL_FROM || process.env.EMAIL_USER || 'noreply@transync.com',
                 subject,
                 html,
             };

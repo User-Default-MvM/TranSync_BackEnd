@@ -293,25 +293,43 @@ const verifyAccount = async (req, res) => {
 // OLVIDE MI CONTRASEÑA
 const forgotPassword = async (req, res) => {
     const { email } = req.body;
+
+    // Validación de email requerido
     if (!email) {
-        return res.status(400).json({ message: "Correo electrónico requerido." });
+        return res.status(400).json({
+            message: "Correo electrónico requerido."
+        });
+    }
+
+    // Validar formato de email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        return res.status(400).json({
+            message: 'Formato de email inválido'
+        });
     }
 
     try {
-        const [rows] = await pool.query("SELECT idUsuario FROM Usuarios WHERE email = ?", [email]);
+        // Verificar que el email existe en la base de datos
+        const [rows] = await pool.query("SELECT idUsuario FROM Usuarios WHERE email = ?", [email.toLowerCase()]);
 
         if (rows.length === 0) {
-            return res.status(404).json({ message: "Correo no registrado." });
+            return res.status(404).json({
+                message: 'El correo electrónico no está registrado.'
+            });
         }
 
         const userId = rows[0].idUsuario;
 
-        const resetToken = jwt.sign({ id: userId }, process.env.JWT_SECRET, { expiresIn: "15m" });
+        // Generar token único de restablecimiento
+        const PasswordReset = require("../models/PasswordReset");
+        const { token } = await PasswordReset.create(userId);
 
+        // Obtener URL del frontend
         const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-        const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
+        const resetUrl = `${frontendUrl}/reset-password?token=${token}`;
 
-        // Enviar correo
+        // Enviar correo con el nuevo template
         await sendEmail(
             email,
             "Restablece Tu Contraseña - TranSync",
@@ -358,7 +376,7 @@ const forgotPassword = async (req, res) => {
                     .email-button {
                         display: inline-block;
                         padding: 12px 25px;
-                        background-color: #dc3545;
+                        background-color: #28a745;
                         color: #ffffff;
                         text-decoration: none;
                         border-radius: 4px;
@@ -390,14 +408,14 @@ const forgotPassword = async (req, res) => {
                     <div class="email-body">
                         <p>¡Hola!</p>
                         <p>Has solicitado restablecer la contraseña de tu cuenta TranSync. Haz clic en el siguiente botón para continuar:</p>
-                        <a href="${resetUrl}" class="email-button" target="_blank">Restablecer mi contraseña</a>
-                        <p>Este enlace expirará en 15 minutos. Si no solicitaste este cambio, por favor ignora este correo.</p>
+                        <a href="${resetUrl}" class="email-button" target="_blank">Restablecer Contraseña</a>
+                        <p>Este enlace expirará en 1 hora. Si no solicitaste este cambio, por favor ignora este correo.</p>
                         <p>Si tienes alguna pregunta, no dudes en contactarnos.</p>
                         <p>¡Gracias por confiar en TranSync!</p>
                     </div>
                     <div class="footer">
                         <p>TranSync &copy; 2025</p>
-                        <p><a href="mailto:support@transync.com" style="color: #007bff;">support@transync.com</a></p>
+                        <p><a href="mailto:geminipruebas7@gmail.com" style="color: #007bff;">geminipruebas7@gmail.com</a></p>
                     </div>
                 </div>
             </body>
@@ -405,10 +423,14 @@ const forgotPassword = async (req, res) => {
             `
         );
 
-        res.json({ message: "Correo de restablecimiento enviado." });
+        res.status(200).json({
+            message: 'Se ha enviado un enlace de recuperación a su correo electrónico'
+        });
     } catch (error) {
         console.error("Error en forgotPassword:", error);
-        res.status(500).json({ message: "Error en el servidor." });
+        res.status(500).json({
+            message: "Error interno del servidor."
+        });
     }
 };
 
@@ -417,10 +439,14 @@ const resetPassword = async (req, res) => {
     const { token } = req.query;
     const { newPassword } = req.body;
 
+    // Validar que el token y la nueva contraseña estén presentes
     if (!token || !newPassword) {
-        return res.status(400).json({ message: "Token y nueva contraseña son requeridos." });
+        return res.status(400).json({
+            message: "Token y nueva contraseña son requeridos."
+        });
     }
 
+    // Validar que la nueva contraseña cumpla requisitos mínimos
     if (!esPasswordSegura(newPassword)) {
         return res.status(400).json({
             message: "La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula, un número y un símbolo."
@@ -428,25 +454,55 @@ const resetPassword = async (req, res) => {
     }
 
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const userId = decoded.id;
+        // Verificar que el token sea válido y no haya expirado
+        const PasswordReset = require("../models/PasswordReset");
+        const resetToken = await PasswordReset.findByToken(token);
 
+        if (!resetToken) {
+            return res.status(400).json({
+                message: 'Token de restablecimiento inválido o expirado.'
+            });
+        }
+
+        // Encontrar al usuario asociado al token
+        const [userRows] = await pool.query(
+            "SELECT idUsuario FROM Usuarios WHERE idUsuario = ?",
+            [resetToken.userId]
+        );
+
+        if (userRows.length === 0) {
+            return res.status(404).json({
+                message: 'Usuario no encontrado.'
+            });
+        }
+
+        // Hash de la nueva contraseña
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(newPassword, salt);
 
+        // Actualizar la contraseña del usuario
         const [result] = await pool.query(
             "UPDATE Usuarios SET passwordHash = ? WHERE idUsuario = ?",
-            [hashedPassword, userId]
+            [hashedPassword, resetToken.userId]
         );
 
         if (result.affectedRows === 0) {
-            return res.status(404).json({ message: "Usuario no encontrado." });
+            return res.status(404).json({
+                message: 'Usuario no encontrado.'
+            });
         }
 
-        res.json({ message: "Contraseña actualizada correctamente." });
+        // Invalidar el token (usarlo una sola vez)
+        await PasswordReset.markAsUsed(token);
+
+        res.status(200).json({
+            message: 'Contraseña restablecida exitosamente'
+        });
     } catch (error) {
         console.error("Error en resetPassword:", error);
-        res.status(400).json({ message: "Token inválido o expirado." });
+        res.status(500).json({
+            message: "Error interno del servidor."
+        });
     }
 };
 // LOGOUT
