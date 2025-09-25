@@ -570,6 +570,66 @@ CREATE TABLE IF NOT EXISTS PasswordResets (
 -- DATOS DE PRUEBA PARA PERFIL DE USUARIO
 -- =====================================================
 
+-- =====================================================
+-- TABLAS PARA DASHBOARD Y REPORTES
+-- =====================================================
+
+-- -----------------------------------------------------
+-- Tabla: ResumenOperacional
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS ResumenOperacional (
+    id INT AUTO_INCREMENT NOT NULL PRIMARY KEY,
+    idEmpresa INT NOT NULL,
+    conductoresActivos INT DEFAULT 0,
+    vehiculosDisponibles INT DEFAULT 0,
+    viajesEnCurso INT DEFAULT 0,
+    viajesCompletados INT DEFAULT 0,
+    alertasPendientes INT DEFAULT 0,
+    fechaActualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_empresa (idEmpresa),
+    INDEX idx_fecha (fechaActualizacion),
+    FOREIGN KEY (idEmpresa) REFERENCES Empresas(idEmpresa) ON DELETE CASCADE
+);
+
+-- -----------------------------------------------------
+-- Tabla: AlertasVencimientos
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS AlertasVencimientos (
+    id INT AUTO_INCREMENT NOT NULL PRIMARY KEY,
+    idEmpresa INT NOT NULL,
+    tipoDocumento ENUM('LICENCIA_CONDUCCION', 'SOAT', 'TECNICO_MECANICA', 'SEGURO') NOT NULL,
+    idReferencia INT NOT NULL COMMENT 'ID del conductor o vehículo relacionado',
+    descripcion VARCHAR(255) NOT NULL,
+    fechaVencimiento DATE NOT NULL,
+    diasParaVencer INT NOT NULL,
+    estado ENUM('PENDIENTE', 'VENCIDA', 'RESUELTA') DEFAULT 'PENDIENTE',
+    fechaCreacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    fechaResolucion TIMESTAMP NULL,
+    INDEX idx_empresa (idEmpresa),
+    INDEX idx_tipo (tipoDocumento),
+    INDEX idx_estado (estado),
+    INDEX idx_vencimiento (fechaVencimiento),
+    FOREIGN KEY (idEmpresa) REFERENCES Empresas(idEmpresa) ON DELETE CASCADE
+);
+
+-- =====================================================
+-- DATOS DE PRUEBA PARA DASHBOARD
+-- =====================================================
+
+-- Insertar datos iniciales para ResumenOperacional
+INSERT IGNORE INTO ResumenOperacional (idEmpresa, conductoresActivos, vehiculosDisponibles, viajesEnCurso, viajesCompletados, alertasPendientes) VALUES
+(1, 3, 2, 1, 4, 2);
+
+-- Insertar alertas de vencimientos de ejemplo
+INSERT IGNORE INTO AlertasVencimientos (idEmpresa, tipoDocumento, idReferencia, descripcion, fechaVencimiento, diasParaVencer, estado) VALUES
+(1, 'LICENCIA_CONDUCCION', 5, 'Licencia de conducción próxima a vencer', DATE_ADD(CURDATE(), INTERVAL 15 DAY), 15, 'PENDIENTE'),
+(1, 'SOAT', 1, 'SOAT del vehículo TSX123 próximo a vencer', DATE_ADD(CURDATE(), INTERVAL 20 DAY), 20, 'PENDIENTE'),
+(1, 'TECNICO_MECANICA', 2, 'Revisión técnico-mecánica próxima a vencer', DATE_ADD(CURDATE(), INTERVAL 10 DAY), 10, 'PENDIENTE');
+
+-- =====================================================
+-- DATOS DE PRUEBA PARA PERFIL DE USUARIO
+-- =====================================================
+
 -- Insertar actividad de usuario para algunos usuarios
 INSERT IGNORE INTO UserActivity (idUsuario, type, description, ipAddress, userAgent) VALUES
 (1, 'login', 'Inicio de sesión exitoso', '192.168.1.100', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'),

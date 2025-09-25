@@ -160,6 +160,11 @@ async function generateIntelligentResponse(nlpAnalysis, queryResult, conversatio
                 respuesta = await generateSystemStatusResponse(queryResult);
                 break;
 
+            case 'alerts':
+            case 'expiry_alerts':
+                respuesta = await generateAlertsResponse(queryResult);
+                break;
+
             case 'greeting':
                 respuesta = generateGreetingResponse(conversationContext);
                 break;
@@ -350,6 +355,27 @@ async function generateSystemStatusResponse(queryResult) {
 }
 
 /**
+ * Generar respuesta para alertas de vencimientos
+ */
+async function generateAlertsResponse(queryResult) {
+    if (!queryResult || queryResult.length === 0) {
+        return '✅ ¡Excelente! No hay alertas de vencimientos pendientes.';
+    }
+
+    let respuesta = `⚠️ **Alertas de Vencimientos Pendientes:**\n\n`;
+
+    queryResult.forEach((alerta, index) => {
+        respuesta += `${index + 1}. 📋 **${alerta.tipoDocumento.replace('_', ' ')}**\n`;
+        respuesta += `   📝 ${alerta.descripciones || 'Sin descripción'}\n`;
+        respuesta += `   🔢 Total: ${alerta.totalAlertas} alerta(s)\n\n`;
+    });
+
+    respuesta += 'Te recomiendo revisar y renovar estos documentos antes de la fecha de vencimiento.';
+
+    return respuesta;
+}
+
+/**
  * Generar respuesta de saludo contextual
  */
 function generateGreetingResponse(conversationContext) {
@@ -373,7 +399,7 @@ function generateGreetingResponse(conversationContext) {
  * Generar respuesta de ayuda
  */
 function generateHelpResponse() {
-    return `🔧 **¿En qué puedo ayudarte?**\n\nPuedo proporcionarte información inteligente sobre:\n\n🚗 **Vehículos:** Estado, disponibilidad, mantenimiento\n👨‍💼 **Conductores:** Disponibilidad, licencias, asignaciones\n📍 **Rutas:** Recorridos registrados y programación\n⏰ **Horarios:** Viajes programados y en curso\n📊 **Sistema:** Estado general y estadísticas\n⚠️ **Vencimientos:** Alertas de documentos próximos a vencer\n\n**Ejemplos de consultas inteligentes:**\n• "¿Cuántos conductores activos hay?"\n• "¿Qué vehículos están disponibles?"\n• "¿Hay licencias por vencer?"\n• "¿Cuál es el estado general del sistema?"\n• "Muéstrame las rutas disponibles"\n\n¡Solo escribe tu consulta de forma natural!`;
+    return `🔧 **¿En qué puedo ayudarte?**\n\nPuedo proporcionarte información inteligente sobre:\n\n🚗 **Vehículos:** Estado, disponibilidad, mantenimiento\n👨‍💼 **Conductores:** Disponibilidad, licencias, asignaciones\n📍 **Rutas:** Recorridos registrados y programación\n⏰ **Horarios:** Viajes programados y en curso\n📊 **Sistema:** Estado general y estadísticas\n⚠️ **Vencimientos:** Alertas de documentos próximos a vencer\n📋 **Dashboard:** Resumen operacional y reportes\n\n**Ejemplos de consultas inteligentes:**\n• "¿Cuántos conductores activos hay?"\n• "¿Qué vehículos están disponibles?"\n• "¿Hay licencias por vencer?"\n• "¿Cuál es el estado general del sistema?"\n• "Muéstrame las rutas disponibles"\n• "¿Hay alertas de vencimientos?"\n• "¿Cuál es el resumen del dashboard?"\n\n¡Solo escribe tu consulta de forma natural!`;
 }
 
 /**

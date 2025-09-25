@@ -82,7 +82,11 @@ class QueryEngine {
             list_schedule: 'Viajes',
             system_status: null, // Estado general - no usa tabla principal, genera consultas múltiples
             license_expiry: 'Conductores',
-            vehicle_maintenance: 'Vehiculos'
+            vehicle_maintenance: 'Vehiculos',
+            alerts: 'AlertasVencimientos', // Alertas de vencimientos
+            expiry_alerts: 'AlertasVencimientos', // Alertas de vencimientos
+            dashboard: 'ResumenOperacional', // Dashboard y reportes
+            summary: 'ResumenOperacional' // Resumen operacional
         };
 
         return tableMapping[intent] || null;
@@ -410,7 +414,11 @@ class QueryEngine {
             list_vehicle: 'Listando vehículos disponibles',
             license_expiry: 'Buscando licencias próximas a vencer',
             vehicle_maintenance: 'Buscando vehículos en mantenimiento',
-            system_status: 'Obteniendo estado general del sistema'
+            system_status: 'Obteniendo estado general del sistema',
+            alerts: 'Consultando alertas de vencimientos',
+            expiry_alerts: 'Buscando documentos próximos a vencer',
+            dashboard: 'Obteniendo datos del dashboard',
+            summary: 'Consultando resumen operacional'
         };
 
         return explanations[intent] || 'Ejecutando consulta personalizada';
@@ -501,6 +509,22 @@ class QueryEngine {
                 fields: [
                     'idViaje', 'fecHorSalViaje', 'estViaje', 'idVehiculo', 'idRuta'
                 ]
+            },
+            ResumenOperacional: {
+                primaryKey: 'id',
+                companyField: 'idEmpresa',
+                fields: [
+                    'id', 'idEmpresa', 'conductoresActivos', 'vehiculosDisponibles',
+                    'viajesEnCurso', 'viajesCompletados', 'alertasPendientes', 'fechaActualizacion'
+                ]
+            },
+            AlertasVencimientos: {
+                primaryKey: 'id',
+                companyField: 'idEmpresa',
+                fields: [
+                    'id', 'idEmpresa', 'tipoDocumento', 'idReferencia', 'descripcion',
+                    'fechaVencimiento', 'diasParaVencer', 'estado', 'fechaCreacion', 'fechaResolucion'
+                ]
             }
         };
     }
@@ -510,7 +534,7 @@ class QueryEngine {
      */
     generateSystemStatusQuery(idEmpresa) {
         // Para system_status, necesitamos múltiples consultas agregadas
-        // Simulamos una tabla virtual con los datos necesarios
+        // Usamos las tablas reales que existen en el esquema
         const sql = `
             SELECT
                 (SELECT COUNT(*) FROM Conductores WHERE estConductor = 'ACTIVO' AND idEmpresa = ?) as conductoresActivos,
@@ -525,6 +549,30 @@ class QueryEngine {
             explanation: 'Obteniendo estado general del sistema con múltiples consultas agregadas',
             estimatedRows: 1,
             isMultipleQuery: true
+        };
+    }
+
+    /**
+     * Generar consulta para alertas de vencimientos
+     */
+    generateAlertsQuery(idEmpresa) {
+        const sql = `
+            SELECT
+                COUNT(*) as totalAlertas,
+                tipoDocumento,
+                GROUP_CONCAT(DISTINCT descripcion SEPARATOR '; ') as descripciones
+            FROM AlertasVencimientos
+            WHERE idEmpresa = ? AND estado = 'PENDIENTE'
+            GROUP BY tipoDocumento
+            ORDER BY tipoDocumento
+        `;
+
+        return {
+            sql: sql,
+            params: [idEmpresa],
+            complexity: 1,
+            explanation: 'Obteniendo alertas de vencimientos pendientes',
+            estimatedRows: 5
         };
     }
 
