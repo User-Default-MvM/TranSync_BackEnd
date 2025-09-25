@@ -16,6 +16,7 @@ pnpm-debug.log*
 .env.development
 .env.production
 .env.test
+.env.railway
 
 # Logs del sistema
 logs/
