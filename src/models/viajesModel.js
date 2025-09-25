@@ -4,10 +4,11 @@ const Viajes = {
   getAll: async () => {
     const [rows] = await db.query(`
       SELECT v.idViaje, v.fecHorSalViaje, v.fecHorLleViaje, v.estViaje, v.obsViaje,
-             ve.placaVehiculo, c.nombreConductor, r.nomRuta
+             ve.plaVehiculo, CONCAT(u.nomUsuario, ' ', u.apeUsuario) as nombreConductor, r.nomRuta
       FROM Viajes v
       INNER JOIN Vehiculos ve ON v.idVehiculo = ve.idVehiculo
       INNER JOIN Conductores c ON v.idConductor = c.idConductor
+      LEFT JOIN Usuarios u ON c.idUsuario = u.idUsuario
       INNER JOIN Rutas r ON v.idRuta = r.idRuta
     `);
     return rows;
