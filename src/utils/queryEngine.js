@@ -17,9 +17,24 @@ class QueryEngine {
             // Determinar tabla principal basada en intención
             const mainTable = this.determineMainTable(intent);
 
-            // Caso especial para system_status - genera múltiples consultas
+            // Casos especiales para consultas complejas
             if (intent === 'system_status') {
                 return this.generateSystemStatusQuery(idEmpresa);
+            }
+
+            // Consultas de rendimiento
+            if (intent.includes('performance') || intent.includes('eficiencia') || intent.includes('rendimiento')) {
+                return this.generatePerformanceQuery(intent, entities, idEmpresa);
+            }
+
+            // Consultas predictivas
+            if (intent.includes('predictive') || intent.includes('pronóstico') || intent.includes('predicción')) {
+                return this.generatePredictiveQuery(intent, entities, idEmpresa);
+            }
+
+            // Consultas de alertas inteligentes
+            if ((intent === 'alerts' || intent === 'expiry_alerts') && context && context.isQuestion) {
+                return this.generateSmartAlertsQuery(idEmpresa);
             }
 
             if (!mainTable) {
@@ -533,22 +548,194 @@ class QueryEngine {
      * Generar consulta especial para estado del sistema
      */
     generateSystemStatusQuery(idEmpresa) {
-        // Para system_status, necesitamos múltiples consultas agregadas
-        // Usamos las tablas reales que existen en el esquema
         const sql = `
             SELECT
                 (SELECT COUNT(*) FROM Conductores WHERE estConductor = 'ACTIVO' AND idEmpresa = ?) as conductoresActivos,
                 (SELECT COUNT(*) FROM Vehiculos WHERE estVehiculo = 'DISPONIBLE' AND idEmpresa = ?) as vehiculosDisponibles,
-                (SELECT COUNT(*) FROM Viajes WHERE estViaje = 'EN_CURSO') as viajesEnCurso
+                (SELECT COUNT(*) FROM Viajes WHERE estViaje = 'EN_CURSO') as viajesEnCurso,
+                (SELECT COUNT(*) FROM Conductores WHERE estConductor = 'INACTIVO' AND idEmpresa = ?) as conductoresInactivos,
+                (SELECT COUNT(*) FROM Vehiculos WHERE estVehiculo = 'EN_MANTENIMIENTO' AND idEmpresa = ?) as vehiculosMantenimiento,
+                (SELECT COUNT(*) FROM Viajes WHERE estViaje = 'COMPLETADO' AND DATE(fecHorSalViaje) = CURDATE()) as viajesCompletadosHoy,
+                (SELECT COUNT(*) FROM Conductores WHERE fecVenLicConductor BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY) AND idEmpresa = ?) as licenciasPorVencer,
+                (SELECT COUNT(*) FROM Vehiculos WHERE fecVenSOAT BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY) AND idEmpresa = ?) as soatPorVencer,
+                (SELECT COUNT(*) FROM Vehiculos WHERE fecVenTec BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY) AND idEmpresa = ?) as tecPorVencer
         `;
 
         return {
             sql: sql,
-            params: [idEmpresa, idEmpresa],
-            complexity: 2,
-            explanation: 'Obteniendo estado general del sistema con múltiples consultas agregadas',
+            params: [idEmpresa, idEmpresa, idEmpresa, idEmpresa, idEmpresa, idEmpresa, idEmpresa, idEmpresa],
+            complexity: 3,
+            explanation: 'Obteniendo estado completo del sistema con métricas detalladas',
             estimatedRows: 1,
             isMultipleQuery: true
+        };
+    }
+
+    /**
+     * Generar consulta para análisis de rendimiento
+     */
+    generatePerformanceQuery(intent, entities, idEmpresa) {
+        let sql = '';
+        let params = [idEmpresa];
+
+        switch (intent) {
+            case 'performance_drivers':
+                sql = `
+                    SELECT
+                        c.nomConductor,
+                        c.apeConductor,
+                        COUNT(v.idViaje) as viajesRealizados,
+                        AVG(TIMESTAMPDIFF(HOUR, v.fecHorSalViaje, v.fecHorLleViaje)) as horasPromedio
+                    FROM Conductores c
+                    LEFT JOIN Viajes v ON c.idConductor = v.idConductorAsignado
+                        AND v.fecHorSalViaje >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+                    WHERE c.idEmpresa = ? AND c.estConductor = 'ACTIVO'
+                    GROUP BY c.idConductor, c.nomConductor, c.apeConductor
+                    ORDER BY viajesRealizados DESC
+                    LIMIT 10
+                `;
+                break;
+
+            case 'performance_vehicles':
+                sql = `
+                    SELECT
+                        v.plaVehiculo,
+                        v.modVehiculo,
+                        COUNT(via.idViaje) as viajesRealizados,
+                        AVG(TIMESTAMPDIFF(HOUR, via.fecHorSalViaje, via.fecHorLleViaje)) as horasUso
+                    FROM Vehiculos v
+                    LEFT JOIN Viajes via ON v.idVehiculo = via.idVehiculo
+                        AND via.fecHorSalViaje >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+                    WHERE v.idEmpresa = ? AND v.estVehiculo = 'DISPONIBLE'
+                    GROUP BY v.idVehiculo, v.plaVehiculo, v.modVehiculo
+                    ORDER BY viajesRealizados DESC
+                    LIMIT 10
+                `;
+                break;
+
+            case 'route_efficiency':
+                sql = `
+                    SELECT
+                        r.nomRuta,
+                        r.oriRuta,
+                        r.desRuta,
+                        COUNT(v.idViaje) as vecesUtilizada,
+                        AVG(TIMESTAMPDIFF(MINUTE, v.fecHorSalViaje, v.fecHorLleViaje)) as tiempoPromedio
+                    FROM Rutas r
+                    LEFT JOIN Viajes v ON r.idRuta = v.idRuta
+                        AND v.fecHorSalViaje >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+                    WHERE r.idEmpresa = ?
+                    GROUP BY r.idRuta, r.nomRuta, r.oriRuta, r.desRuta
+                    ORDER BY vecesUtilizada DESC
+                    LIMIT 10
+                `;
+                break;
+
+            default:
+                return null;
+        }
+
+        return {
+            sql: sql,
+            params: params,
+            complexity: 3,
+            explanation: `Análisis de rendimiento: ${intent}`,
+            estimatedRows: 10
+        };
+    }
+
+    /**
+     * Generar consulta para alertas inteligentes
+     */
+    generateSmartAlertsQuery(idEmpresa, days = 30) {
+        const sql = `
+            SELECT
+                'LICENCIAS' as tipo,
+                COUNT(*) as total,
+                GROUP_CONCAT(CONCAT(c.nomConductor, ' ', c.apeConductor) SEPARATOR ', ') as detalles
+            FROM Conductores c
+            WHERE c.idEmpresa = ? AND c.fecVenLicConductor BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL ? DAY)
+            UNION ALL
+            SELECT
+                'SOAT' as tipo,
+                COUNT(*) as total,
+                GROUP_CONCAT(v.plaVehiculo SEPARATOR ', ') as detalles
+            FROM Vehiculos v
+            WHERE v.idEmpresa = ? AND v.fecVenSOAT BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL ? DAY)
+            UNION ALL
+            SELECT
+                'TECNICO' as tipo,
+                COUNT(*) as total,
+                GROUP_CONCAT(v.plaVehiculo SEPARATOR ', ') as detalles
+            FROM Vehiculos v
+            WHERE v.idEmpresa = ? AND v.fecVenTec BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL ? DAY)
+            ORDER BY tipo
+        `;
+
+        return {
+            sql: sql,
+            params: [idEmpresa, days, idEmpresa, days, idEmpresa, days],
+            complexity: 3,
+            explanation: 'Generando alertas inteligentes de vencimientos',
+            estimatedRows: 3
+        };
+    }
+
+    /**
+     * Generar consulta para análisis predictivo
+     */
+    generatePredictiveQuery(intent, entities, idEmpresa) {
+        let sql = '';
+        let params = [idEmpresa];
+
+        switch (intent) {
+            case 'predictive_maintenance':
+                sql = `
+                    SELECT
+                        v.plaVehiculo,
+                        v.modVehiculo,
+                        DATEDIFF(v.fecVenSOAT, CURDATE()) as diasParaSOAT,
+                        DATEDIFF(v.fecVenTec, CURDATE()) as diasParaTecnico,
+                        CASE
+                            WHEN DATEDIFF(v.fecVenSOAT, CURDATE()) <= 15 OR DATEDIFF(v.fecVenTec, CURDATE()) <= 15
+                            THEN 'ALTA'
+                            WHEN DATEDIFF(v.fecVenSOAT, CURDATE()) <= 30 OR DATEDIFF(v.fecVenTec, CURDATE()) <= 30
+                            THEN 'MEDIA'
+                            ELSE 'BAJA'
+                        END as prioridadMantenimiento
+                    FROM Vehiculos v
+                    WHERE v.idEmpresa = ? AND v.estVehiculo = 'DISPONIBLE'
+                    ORDER BY diasParaSOAT, diasParaTecnico
+                `;
+                break;
+
+            case 'predictive_staff':
+                sql = `
+                    SELECT
+                        c.nomConductor,
+                        c.apeConductor,
+                        DATEDIFF(c.fecVenLicConductor, CURDATE()) as diasParaVencimiento,
+                        CASE
+                            WHEN DATEDIFF(c.fecVenLicConductor, CURDATE()) <= 15 THEN 'URGENTE'
+                            WHEN DATEDIFF(c.fecVenLicConductor, CURDATE()) <= 30 THEN 'PRONTO'
+                            ELSE 'NORMAL'
+                        END as estadoLicencia
+                    FROM Conductores c
+                    WHERE c.idEmpresa = ? AND c.estConductor = 'ACTIVO'
+                    ORDER BY diasParaVencimiento
+                `;
+                break;
+
+            default:
+                return null;
+        }
+
+        return {
+            sql: sql,
+            params: params,
+            complexity: 3,
+            explanation: `Análisis predictivo: ${intent}`,
+            estimatedRows: 20
         };
     }
 

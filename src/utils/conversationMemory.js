@@ -208,17 +208,28 @@ class ConversationMemory {
     }
 
     /**
-     * Actualizar patrones de uso
+     * Actualizar patrones de uso con aprendizaje continuo
      */
     updatePatterns(userMemory, message) {
         if (!userMemory.patterns) userMemory.patterns = {};
 
         const intent = message.intent || 'unknown';
         const hour = new Date().getHours();
+        const isSuccess = message.success !== false;
 
         // Contar uso por intención
         if (!userMemory.patterns.intents) userMemory.patterns.intents = {};
         userMemory.patterns.intents[intent] = (userMemory.patterns.intents[intent] || 0) + 1;
+
+        // Rastrear éxito por intención para aprendizaje
+        if (!userMemory.patterns.intentSuccess) userMemory.patterns.intentSuccess = {};
+        if (!userMemory.patterns.intentSuccess[intent]) {
+            userMemory.patterns.intentSuccess[intent] = { success: 0, total: 0 };
+        }
+        userMemory.patterns.intentSuccess[intent].total++;
+        if (isSuccess) {
+            userMemory.patterns.intentSuccess[intent].success++;
+        }
 
         // Contar uso por hora del día
         if (!userMemory.patterns.hourlyUsage) userMemory.patterns.hourlyUsage = {};
@@ -233,6 +244,39 @@ class ConversationMemory {
                         (userMemory.patterns.commonEntities[entityType] || 0) + 1;
                 }
             });
+        }
+
+        // Aprendizaje de frases exitosas
+        if (isSuccess && message.text) {
+            if (!userMemory.patterns.successfulPhrases) userMemory.patterns.successfulPhrases = {};
+            const tokens = this.tokenizeMessage(message.text);
+            tokens.forEach(token => {
+                if (token.length > 3) { // Solo tokens significativos
+                    userMemory.patterns.successfulPhrases[token] =
+                        (userMemory.patterns.successfulPhrases[token] || 0) + 1;
+                }
+            });
+        }
+
+        // Aprendizaje de frases problemáticas
+        if (!isSuccess && message.text) {
+            if (!userMemory.patterns.problematicPhrases) userMemory.patterns.problematicPhrases = {};
+            const tokens = this.tokenizeMessage(message.text);
+            tokens.forEach(token => {
+                if (token.length > 3) {
+                    userMemory.patterns.problematicPhrases[token] =
+                        (userMemory.patterns.problematicPhrases[token] || 0) + 1;
+                }
+            });
+        }
+
+        // Actualizar confianza promedio por intención
+        if (!userMemory.patterns.intentConfidence) userMemory.patterns.intentConfidence = {};
+        if (message.confidence !== undefined) {
+            const current = userMemory.patterns.intentConfidence[intent] || { sum: 0, count: 0 };
+            current.sum += message.confidence;
+            current.count++;
+            userMemory.patterns.intentConfidence[intent] = current;
         }
     }
 
@@ -306,11 +350,191 @@ class ConversationMemory {
     }
 
     /**
-     * Obtener sugerencias para usuario
+     * Obtener sugerencias para usuario con aprendizaje
      */
     getSuggestions(userId, companyId) {
         const userKey = `${userId}_${companyId}`;
-        return this.suggestions.get(userKey) || [];
+        const userMemory = this.memories.get(userKey);
+
+        if (!userMemory) {
+            return this.getDefaultSuggestions();
+        }
+
+        // Generar sugerencias basadas en patrones de éxito
+        const suggestions = this.generateSmartSuggestions(userMemory);
+
+        // Combinar con sugerencias existentes
+        const existing = this.suggestions.get(userKey) || [];
+        const combined = [...suggestions, ...existing];
+
+        // Filtrar y ordenar por relevancia
+        const unique = combined
+            .filter((s, index, arr) => arr.findIndex(s2 => s2.text === s.text) === index)
+            .sort((a, b) => b.relevance - a.relevance)
+            .slice(0, 5);
+
+        return unique;
+    }
+
+    /**
+     * Generar sugerencias inteligentes basadas en aprendizaje
+     */
+    generateSmartSuggestions(userMemory) {
+        const suggestions = [];
+        const patterns = userMemory.patterns || {};
+
+        // Sugerencias basadas en intenciones exitosas
+        if (patterns.intentSuccess) {
+            const successfulIntents = Object.entries(patterns.intentSuccess)
+                .filter(([_, data]) => data.success / data.total > 0.7) // Más del 70% de éxito
+                .sort(([,a], [,b]) => (b.success / b.total) - (a.success / a.total))
+                .slice(0, 3);
+
+            successfulIntents.forEach(([intent, data]) => {
+                suggestions.push({
+                    text: this.getSuggestionText(intent),
+                    relevance: (data.success / data.total) * 0.9,
+                    category: intent,
+                    type: 'learned'
+                });
+            });
+        }
+
+        // Sugerencias basadas en frases exitosas
+        if (patterns.successfulPhrases) {
+            const topPhrases = Object.entries(patterns.successfulPhrases)
+                .sort(([,a], [,b]) => b - a)
+                .slice(0, 3);
+
+            topPhrases.forEach(([phrase, count]) => {
+                if (count > 2) { // Solo frases que aparecieron más de 2 veces
+                    suggestions.push({
+                        text: `¿${phrase.charAt(0).toUpperCase() + phrase.slice(1)}?`,
+                        relevance: Math.min(count * 0.1, 0.8),
+                        category: 'phrase',
+                        type: 'learned'
+                    });
+                }
+            });
+        }
+
+        return suggestions;
+    }
+
+    /**
+     * Obtener texto de sugerencia basado en intención
+     */
+    getSuggestionText(intent) {
+        const suggestionMap = {
+            'count_driver': '¿Cuántos conductores están activos?',
+            'count_vehicle': '¿Cuántos vehículos están disponibles?',
+            'list_vehicle': '¿Qué vehículos están disponibles?',
+            'license_expiry': '¿Hay licencias próximas a vencer?',
+            'vehicle_maintenance': '¿Qué vehículos necesitan mantenimiento?',
+            'system_status': '¿Cuál es el estado general del sistema?',
+            'alerts': '¿Hay alertas de vencimientos?',
+            'list_route': '¿Qué rutas están disponibles?',
+            'list_schedule': '¿Cuáles son los viajes programados?'
+        };
+
+        return suggestionMap[intent] || '¿En qué más puedo ayudarte?';
+    }
+
+    /**
+     * Obtener sugerencias por defecto
+     */
+    getDefaultSuggestions() {
+        return [
+            {
+                text: '¿Cuántos conductores están activos?',
+                relevance: 0.8,
+                category: 'count_driver'
+            },
+            {
+                text: '¿Qué vehículos están disponibles?',
+                relevance: 0.8,
+                category: 'list_vehicle'
+            },
+            {
+                text: '¿Cuál es el estado del sistema?',
+                relevance: 0.7,
+                category: 'system_status'
+            },
+            {
+                text: '¿Hay licencias próximas a vencer?',
+                relevance: 0.7,
+                category: 'license_expiry'
+            },
+            {
+                text: '¿Hay alertas de vencimientos?',
+                relevance: 0.6,
+                category: 'alerts'
+            }
+        ];
+    }
+
+    /**
+     * Obtener estadísticas de aprendizaje
+     */
+    getLearningStats(userId, companyId) {
+        const userKey = `${userId}_${companyId}`;
+        const userMemory = this.memories.get(userKey);
+
+        if (!userMemory || !userMemory.patterns) {
+            return {
+                totalInteractions: 0,
+                successfulInteractions: 0,
+                learningProgress: 0,
+                topIntents: [],
+                commonEntities: [],
+                improvementAreas: []
+            };
+        }
+
+        const patterns = userMemory.patterns;
+        const totalInteractions = userMemory.messages.length;
+        const successfulInteractions = userMemory.messages.filter(m => m.success !== false).length;
+
+        // Calcular progreso de aprendizaje
+        const learningProgress = Math.min((successfulInteractions / totalInteractions) * 100, 100);
+
+        // Intenciones más exitosas
+        const topIntents = patterns.intentSuccess ?
+            Object.entries(patterns.intentSuccess)
+                .map(([intent, data]) => ({
+                    intent,
+                    successRate: data.success / data.total,
+                    totalUses: data.total
+                }))
+                .sort((a, b) => b.successRate - a.successRate)
+                .slice(0, 5) : [];
+
+        // Entidades más comunes
+        const commonEntities = patterns.commonEntities ?
+            Object.entries(patterns.commonEntities)
+                .map(([entity, count]) => ({ entity, count }))
+                .sort((a, b) => b.count - a.count)
+                .slice(0, 5) : [];
+
+        // Áreas de mejora
+        const improvementAreas = patterns.intentSuccess ?
+            Object.entries(patterns.intentSuccess)
+                .filter(([_, data]) => data.success / data.total < 0.5)
+                .map(([intent, data]) => ({
+                    intent,
+                    successRate: data.success / data.total,
+                    needsImprovement: true
+                })) : [];
+
+        return {
+            totalInteractions,
+            successfulInteractions,
+            learningProgress: Math.round(learningProgress),
+            topIntents,
+            commonEntities,
+            improvementAreas,
+            lastActivity: userMemory.lastActivity
+        };
     }
 
     /**
@@ -446,6 +670,16 @@ class ConversationMemory {
     clearMemory() {
         this.memories.clear();
         this.suggestions.clear();
+        this.saveMemory();
+    }
+
+    /**
+     * Limpiar memoria específica de un usuario
+     */
+    clearUserMemory(userId, companyId) {
+        const userKey = `${userId}_${companyId}`;
+        this.memories.delete(userKey);
+        this.suggestions.delete(userKey);
         this.saveMemory();
     }
 }
