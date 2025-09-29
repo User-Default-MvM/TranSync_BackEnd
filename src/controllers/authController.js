@@ -235,25 +235,34 @@ const login = async (req, res) => {
 
         const token = jwt.sign(
             {
-                id: user.idUsuario,
-                role: user.rol,
-                idEmpresa: user.idEmpresa,
-                empresa: user.nomEmpresa
+                idUsuario: user.idUsuario,
+                idEmpresa: user.idEmpresa,    // ✅ Incluir empresaId en token
+                rol: user.rol || user.nomRol,
+                email: user.email
             },
             process.env.JWT_SECRET,
-            { expiresIn: "8h" }
+            { expiresIn: '24h' }
         );
 
         res.json({
-            success: true,
-            token,
+            status: 'SUCCESS',
+            message: 'Login exitoso',
+            token: token,
             user: {
-                id: user.idUsuario,
-                name: `${nombre} ${apellido}`.trim(),
+                id: user.idUsuario,           // ✅ idUsuario de tabla Usuarios
                 email: user.email,
-                role: user.rol,
-                empresa: user.nomEmpresa,
-                idEmpresa: user.idEmpresa
+                name: user.nomUsuario,        // ✅ nomUsuario de tabla Usuarios
+                empresaId: user.idEmpresa,    // ✅ idEmpresa de tabla Usuarios - CAMPO CRÍTICO
+                empresa: user.nomEmpresa,     // ✅ nomEmpresa de tabla Empresas
+                role: user.rol || user.nomRol,
+                telefono: user.telUsuario,
+                documento: user.numDocUsuario,
+                activo: user.estActivo,
+                fechaCreacion: user.fecCreUsuario
+            },
+            empresa: {
+                id: user.idEmpresa,
+                nombre: user.nomEmpresa
             }
         });
 

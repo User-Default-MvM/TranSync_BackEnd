@@ -49,53 +49,31 @@ require('./src/routes/websocketRoutes')();
 // --- Configuración CORS optimizada ---
 const corsOptions = {
   origin: function (origin, callback) {
-    // Permitir requests sin origen (como mobile apps o curl)
+    // Permitir requests sin origen
     if (!origin) return callback(null, true);
 
-    // Lista de orígenes permitidos
+    // ✅ CORRECCIÓN: Lista simplificada y efectiva
     const allowedOrigins = [
-      process.env.FRONTEND_URL || `https://${process.env.RAILWAY_PUBLIC_DOMAIN || 'your-app.railway.app'}`,
-      'http://10.0.2.2:8081',         // Emulador Android con Expo
-      'http://localhost:8081',        // Expo local
-      'http://localhost:19006',       // Expo web
-      'exp://192.168.1.100:19000',    // Expo tunnel
-      'http://127.0.0.1:3000',        // Web app alternativa
-      'https://transync.com',         // Dominio producción
-      'https://www.transync.com',     // Dominio producción con www
-      'https://api.transync.com',     // API en producción
-      'https://transync1.netlify.app', // Frontend en Netlify
-      'https://transync1.netlify.app/home', // Frontend en Netlify con ruta
-      process.env.FRONTEND_URL,       // URL del frontend desde .env
-    ].filter(Boolean); // Filtrar valores undefined/null
+      'https://transync1.netlify.app',           // ✅ Frontend Netlify
+      'http://localhost:3000',                    // ✅ Desarrollo local
+      'http://127.0.0.1:3000',                   // ✅ Desarrollo alternativo
+      'https://transyncbackend-production.up.railway.app' // ✅ Backend mismo
+    ];
 
-    // En desarrollo, permitir cualquier origen localhost
+    // ✅ CORRECCIÓN: Permitir desarrollo local fácilmente
     if (process.env.NODE_ENV !== 'production') {
-      const isLocalhost = origin.includes('localhost') || origin.includes('127.0.0.1') || origin.includes('10.0.2.2');
+      const isLocalhost = origin.includes('localhost') || origin.includes('127.0.0.1');
       if (isLocalhost) return callback(null, true);
     }
 
-    // Verificar si el origen está en la lista permitida
     if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
 
-    // Si no está en la lista, rechazar
-    const msg = `Origen no permitido por política CORS: ${origin}`;
-    return callback(new Error(msg), false);
+    return callback(new Error('Origen no permitido'), false);
   },
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: [
-    'Content-Type',
-    'Authorization',
-    'X-Requested-With',
-    'Accept',
-    'Origin',
-    'Access-Control-Request-Method',
-    'Access-Control-Request-Headers'
-  ],
   credentials: true,
-  optionsSuccessStatus: 200, // Para compatibilidad con legacy browsers
-  maxAge: 86400 // Cache preflight por 24 horas
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
 };
 
 // --- Middlewares de seguridad y rendimiento ---

@@ -11,9 +11,6 @@ router.use(authMiddleware);
 // ✅ Ruta para SELECT (id + nombre)
 router.get('/utils/select', rutasController.getRutasSelect);
 
-// ✅ Obtener paradas de una ruta específica
-router.get('/:id/paradas', rutasController.getParadasRuta);
-
 // === CRUD de rutas ===
 // Obtener todas las rutas
 router.get('/', allowRoles('ADMINISTRADOR', 'SUPERADMIN'), rutasController.getRutas);

@@ -61,47 +61,29 @@ class RealTimeService {
     try {
       const { token, userId, empresaId, rol } = authData;
 
+      // ✅ VALIDACIÓN: Verificar que empresaId existe
       if (!token || !userId || !empresaId) {
         socket.emit('auth:error', {
-          message: 'Datos de autenticación incompletos',
+          message: 'Datos de autenticación incompletos - empresaId requerido',
           timestamp: new Date()
         });
         socket.disconnect();
         return;
       }
 
-      // Aquí podrías validar el token JWT si es necesario
-      // Por simplicidad, asumimos que el token es válido si llega hasta aquí
-
       socket.userId = userId;
-      socket.empresaId = empresaId;
+      socket.empresaId = empresaId;  // ✅ Asignar empresaId correctamente
       socket.rol = rol || 'USER';
       socket.authenticated = true;
-      socket.connectedAt = new Date();
 
-      // Registrar cliente
-      this.registerClient(socket);
+      // ✅ LOGGING: Verificar que empresaId se recibe
+      console.log(`✅ Cliente autenticado: ${userId} - Empresa: ${empresaId}`);
 
-      // Unir a salas
+      // Unir a salas incluyendo empresa
       this.joinRooms(socket);
 
-      // Confirmar autenticación
-      socket.emit('auth:success', {
-        message: 'Autenticación exitosa',
-        userId: userId,
-        empresaId: empresaId,
-        timestamp: new Date()
-      });
-
-      console.log(`✅ Cliente autenticado: ${userId} (${empresaId})`);
-
     } catch (error) {
-      console.error('❌ Error en autenticación:', error);
-      socket.emit('auth:error', {
-        message: 'Error interno del servidor',
-        timestamp: new Date()
-      });
-      socket.disconnect();
+      console.error('❌ Error en autenticación WebSocket:', error);
     }
   }
 
