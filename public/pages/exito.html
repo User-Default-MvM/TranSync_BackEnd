@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verificación Exitosa</title>
+    <style>
+        /* --- Importar la fuente de tu app --- */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&display=swap');
+
+        /* --- Paleta de colores inspirada en tu app --- */
+        :root {
+            --bg-dark: #0f172a;
+            /* Similar a dark:bg-gray-900 */
+            --primary-start: #1a237e;
+            --primary-end: #3949ab;
+            --success-start: #16a34a;
+            --success-end: #22c55e;
+            --text-primary: #e2e8f0;
+            /* Similar a dark:text-gray-100 */
+            --text-secondary: #94a3b8;
+            /* Similar a dark:text-gray-300 */
+            --card-bg: rgba(28, 37, 64, 0.5);
+            /* Fondo de tarjeta semitransparente */
+            --card-border: rgba(57, 73, 171, 0.5);
+        }
+
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-primary);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* --- Efectos de fondo (blobs animados) --- */
+        body::before,
+        body::after {
+            content: '';
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(100px);
+            z-index: 0;
+            opacity: 0.5;
+            animation: pulse 10s infinite alternate;
+        }
+
+        body::before {
+            background-color: var(--primary-start);
+            width: 300px;
+            height: 300px;
+            top: -50px;
+            left: -100px;
+        }
+
+        body::after {
+            background-color: var(--primary-end);
+            width: 400px;
+            height: 400px;
+            bottom: -100px;
+            right: -150px;
+            animation-delay: -5s;
+        }
+
+        @keyframes pulse {
+            from {
+                transform: scale(0.8);
+            }
+
+            to {
+                transform: scale(1.2);
+            }
+        }
+
+        /* --- Tarjeta principal con efecto de vidrio (glassmorphism) --- */
+        .container {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
+            /* Coincide con rounded-3xl */
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            text-align: center;
+            padding: 40px;
+            max-width: 450px;
+            width: 90%;
+            position: relative;
+            z-index: 1;
+        }
+
+        .icon-wrapper {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 24px;
+            border-radius: 9999px;
+            /* rounded-full */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-image: linear-gradient(to right, var(--success-start), var(--success-end));
+            box-shadow: 0 4px 14px rgba(34, 197, 94, 0.3);
+        }
+
+        .icon-wrapper svg {
+            width: 40px;
+            height: 40px;
+            color: white;
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 800;
+            margin: 0 0 12px;
+        }
+
+        p {
+            font-size: 16px;
+            line-height: 1.6;
+            margin: 0 0 28px;
+            color: var(--text-secondary);
+        }
+
+        .button {
+            display: inline-block;
+            background-image: linear-gradient(to right, var(--primary-start), var(--primary-end));
+            color: white;
+            padding: 14px 28px;
+            border-radius: 16px;
+            /* rounded-2xl */
+            text-decoration: none;
+            font-weight: 700;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 14px rgba(57, 73, 171, 0.3);
+        }
+
+        .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(57, 73, 171, 0.5);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="icon-wrapper">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 6 9 17l-5-5" />
+            </svg>
+        </div>
+        <h1>¡Cuenta Verificada!</h1>
+        <p>Tu cuenta ha sido activada. Ya puedes iniciar sesión y transformar el transporte con nosotros.</p>
+        <a href="https://transync1.netlify.app/login" class="button">Iniciar Sesión</a>
+    </div>
+</body>
+
+</html>
