@@ -1,5 +1,5 @@
 // src/controllers/authController.js 
-
+const path = require('path');
 const pool = require("../config/db");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
@@ -267,8 +267,13 @@ const login = async (req, res) => {
 const verifyAccount = async (req, res) => {
     const { token } = req.query;
 
+    // Creamos las rutas a nuestros archivos HTML de forma segura
+    const successPath = path.join(__dirname, '..', '..', 'public', 'pages', 'exito.html');
+    const errorPath = path.join(__dirname, '..', '..', 'public', 'pages', 'error.html');
+
     if (!token) {
-        return res.status(400).json({ message: "Token de verificación no proporcionado." });
+        // Si no hay token, enviamos la página de error
+        return res.status(400).sendFile(errorPath);
     }
 
     try {
@@ -281,13 +286,17 @@ const verifyAccount = async (req, res) => {
         );
 
         if (result.affectedRows === 0) {
-            return res.status(404).json({ message: 'Usuario no encontrado o ya verificado.' });
+            // Si el usuario no se encuentra o ya está verificado, es un error
+            return res.status(404).sendFile(errorPath);
         }
 
-        res.status(200).json({ message: 'Cuenta verificada exitosamente.' });
+        // ¡Éxito! Enviamos la página de cuenta verificada
+        res.status(200).sendFile(successPath);
+
     } catch (error) {
         console.error("Error al verificar cuenta:", error);
-        return res.status(400).json({ message: "Token inválido o expirado." });
+        // Si el token es inválido o expiró, enviamos la página de error
+        return res.status(400).sendFile(errorPath);
     }
 };
 // OLVIDE MI CONTRASEÑA
