@@ -630,11 +630,10 @@ const getEstadisticasVehiculos = async (req, res) => {
 // Verificar vencimientos de documentos
 const verificarVencimientosVehiculos = async (req, res) => {
     const { dias = 30 } = req.query;
-    const idEmpresa = req.user?.idEmpresa || 1; // Empresa del usuario autenticado
 
     try {
         const [vehiculos] = await pool.query(`
-            SELECT
+            SELECT 
                 v.idVehiculo,
                 v.numVehiculo,
                 v.plaVehiculo,
@@ -649,17 +648,16 @@ const verificarVencimientosVehiculos = async (req, res) => {
             FROM Vehiculos v
             LEFT JOIN Conductores c ON v.idConductorAsignado = c.idConductor
             LEFT JOIN Usuarios u ON c.idUsuario = u.idUsuario
-            WHERE v.idEmpresa = ?  -- ✅ Filtrar por empresa del usuario
-            AND (
+            WHERE (
                 v.fecVenSOAT <= DATE_ADD(CURDATE(), INTERVAL ? DAY) OR
                 v.fecVenTec <= DATE_ADD(CURDATE(), INTERVAL ? DAY)
             )
             AND v.estVehiculo != 'FUERA_DE_SERVICIO'
-            ORDER BY
+            ORDER BY 
                 LEAST(DATEDIFF(v.fecVenSOAT, CURDATE()), DATEDIFF(v.fecVenTec, CURDATE())) ASC
-        `, [idEmpresa, parseInt(dias), parseInt(dias)]);
+        `, [parseInt(dias), parseInt(dias)]);
 
-        res.json({
+        res.json({ 
             vehiculosConVencimientos: vehiculos,
             totalVehiculos: vehiculos.length,
             diasAnticipacion: parseInt(dias)

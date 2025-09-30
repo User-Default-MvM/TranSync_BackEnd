@@ -6,9 +6,8 @@ const pool = require("../config/db");
 router.get("/", async (req, res) => {
   try {
     console.log("📌 Entrando a GET /api/viajes");
-    const idEmpresa = req.user?.idEmpresa || 1; // Empresa del usuario autenticado
-
-    // Query con JOINs para obtener información completa - Filtrado por empresa
+    
+    // Query con JOINs para obtener información completa
     const [rows] = await pool.query(`
       SELECT
         v.*,
@@ -27,10 +26,9 @@ router.get("/", async (req, res) => {
       LEFT JOIN Conductores c ON v.idConductor = c.idConductor
       LEFT JOIN Usuarios u ON c.idUsuario = u.idUsuario
       LEFT JOIN Rutas r ON v.idRuta = r.idRuta
-      WHERE veh.idEmpresa = ?  -- ✅ Filtrar por empresa del usuario
       ORDER BY v.fecHorSalViaje DESC
-    `, [idEmpresa]);
-
+    `);
+    
     res.json(rows);
   } catch (error) {
     console.error("❌ Error en GET /api/viajes:", error);
@@ -42,9 +40,8 @@ router.get("/", async (req, res) => {
 router.get("/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const idEmpresa = req.user?.idEmpresa || 1; // Empresa del usuario autenticado
     console.log("📌 Entrando a GET /api/viajes/:id con ID:", id);
-
+    
     const [rows] = await pool.query(`
       SELECT
         v.*,
@@ -63,13 +60,13 @@ router.get("/:id", async (req, res) => {
       LEFT JOIN Conductores c ON v.idConductor = c.idConductor
       LEFT JOIN Usuarios u ON c.idUsuario = u.idUsuario
       LEFT JOIN Rutas r ON v.idRuta = r.idRuta
-      WHERE v.idViaje = ? AND veh.idEmpresa = ?  -- ✅ Verificar que pertenece a la empresa
-    `, [id, idEmpresa]);
-
+      WHERE v.idViaje = ?
+    `, [id]);
+    
     if (rows.length === 0) {
-      return res.status(404).json({ message: "Viaje no encontrado o no pertenece a su empresa" });
+      return res.status(404).json({ message: "Viaje no encontrado" });
     }
-
+    
     res.json(rows[0]);
   } catch (error) {
     console.error("❌ Error en GET /api/viajes/:id:", error);
@@ -99,40 +96,39 @@ router.post("/", async (req, res) => {
       });
     }
 
-    // Verificar que el vehículo existe, está disponible y pertenece a la empresa del usuario
-    const idEmpresa = req.user?.idEmpresa || 1;
+    // Verificar que el vehículo existe y está disponible
     const [vehiculo] = await pool.query(
-      "SELECT * FROM Vehiculos WHERE idVehiculo = ? AND idEmpresa = ? AND estVehiculo IN ('DISPONIBLE', 'EN_MANTENIMIENTO')",
-      [idVehiculo, idEmpresa]
+      "SELECT * FROM Vehiculos WHERE idVehiculo = ? AND estVehiculo IN ('DISPONIBLE', 'EN_MANTENIMIENTO')",
+      [idVehiculo]
     );
-
+    
     if (vehiculo.length === 0) {
-      return res.status(400).json({
-        message: "El vehículo no existe, no está disponible o no pertenece a su empresa"
+      return res.status(400).json({ 
+        message: "El vehículo no existe o no está disponible" 
       });
     }
 
-    // Verificar que el conductor existe, está activo y pertenece a la empresa del usuario
+    // Verificar que el conductor existe y está activo
     const [conductor] = await pool.query(
-      "SELECT c.* FROM Conductores c JOIN Usuarios u ON c.idUsuario = u.idUsuario WHERE c.idConductor = ? AND c.idEmpresa = ? AND c.estConductor = 'ACTIVO'",
-      [idConductor, idEmpresa]
+      "SELECT * FROM Conductores WHERE idConductor = ? AND estConductor = 'ACTIVO'",
+      [idConductor]
     );
-
+    
     if (conductor.length === 0) {
-      return res.status(400).json({
-        message: "El conductor no existe, no está activo o no pertenece a su empresa"
+      return res.status(400).json({ 
+        message: "El conductor no existe o no está activo" 
       });
     }
 
-    // Verificar que la ruta existe y pertenece a la empresa del usuario
+    // Verificar que la ruta existe
     const [ruta] = await pool.query(
-      "SELECT * FROM Rutas WHERE idRuta = ? AND idEmpresa = ?",
-      [idRuta, idEmpresa]
+      "SELECT * FROM Rutas WHERE idRuta = ?",
+      [idRuta]
     );
-
+    
     if (ruta.length === 0) {
-      return res.status(400).json({
-        message: "La ruta especificada no existe o no pertenece a su empresa"
+      return res.status(400).json({ 
+        message: "La ruta especificada no existe" 
       });
     }
 
@@ -202,36 +198,31 @@ router.put("/:id", async (req, res) => {
       return res.status(404).json({ message: "Viaje no encontrado" });
     }
 
-    // Validar datos si se proporcionan - Verificar que pertenecen a la empresa del usuario
-    const idEmpresa = req.user?.idEmpresa || 1;
-
+    // Validar datos si se proporcionan
     if (idVehiculo) {
       const [vehiculo] = await pool.query(
-        "SELECT * FROM Vehiculos WHERE idVehiculo = ? AND idEmpresa = ?",
-        [idVehiculo, idEmpresa]
+        "SELECT * FROM Vehiculos WHERE idVehiculo = ?", 
+        [idVehiculo]
       );
       if (vehiculo.length === 0) {
-        return res.status(400).json({ message: "El vehículo especificado no existe o no pertenece a su empresa" });
+        return res.status(400).json({ message: "El vehículo especificado no existe" });
       }
     }
 
     if (idConductor) {
       const [conductor] = await pool.query(
-        "SELECT c.* FROM Conductores c JOIN Usuarios u ON c.idUsuario = u.idUsuario WHERE c.idConductor = ? AND c.idEmpresa = ? AND c.estConductor = 'ACTIVO'",
-        [idConductor, idEmpresa]
+        "SELECT * FROM Conductores WHERE idConductor = ?", 
+        [idConductor]
       );
       if (conductor.length === 0) {
-        return res.status(400).json({ message: "El conductor especificado no existe, no pertenece a su empresa o no está activo" });
+        return res.status(400).json({ message: "El conductor especificado no existe" });
       }
     }
 
     if (idRuta) {
-      const [ruta] = await pool.query(
-        "SELECT * FROM Rutas WHERE idRuta = ? AND idEmpresa = ?",
-        [idRuta, idEmpresa]
-      );
+      const [ruta] = await pool.query("SELECT * FROM Rutas WHERE idRuta = ?", [idRuta]);
       if (ruta.length === 0) {
-        return res.status(400).json({ message: "La ruta especificada no existe o no pertenece a su empresa" });
+        return res.status(400).json({ message: "La ruta especificada no existe" });
       }
     }
 

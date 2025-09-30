@@ -23,7 +23,7 @@ router.post('/consulta', chatbotController.procesarConsulta);
  * Acceso: Solo administradores
  */
 router.get('/estadisticas', 
-    require('../middleware/roleMiddleware')('GESTOR', 'SUPERADMIN'), 
+    require('../middleware/roleMiddleware')('ADMINISTRADOR', 'SUPERADMIN'), 
     chatbotController.getEstadisticasChatbot
 );
 
@@ -33,7 +33,7 @@ router.get('/estadisticas',
  * Acceso: Solo administradores
  */
 router.post('/query',
-    require('../middleware/roleMiddleware')('GESTOR', 'SUPERADMIN'),
+    require('../middleware/roleMiddleware')('ADMINISTRADOR', 'SUPERADMIN'),
     async (req, res) => {
         try {
             const { sql, params = [] } = req.body;
@@ -74,7 +74,7 @@ router.post('/query',
  * Acceso: Solo administradores
  */
 router.get('/cache/stats',
-    require('../middleware/roleMiddleware')('GESTOR', 'SUPERADMIN'),
+    require('../middleware/roleMiddleware')('ADMINISTRADOR', 'SUPERADMIN'),
     (req, res) => {
         try {
             const stats = cacheService.getPerformanceStats();
@@ -98,7 +98,7 @@ router.get('/cache/stats',
  * Acceso: Solo administradores
  */
 router.post('/cache/clear',
-    require('../middleware/roleMiddleware')('GESTOR', 'SUPERADMIN'),
+    require('../middleware/roleMiddleware')('ADMINISTRADOR', 'SUPERADMIN'),
     (req, res) => {
         try {
             cacheService.clearAll();

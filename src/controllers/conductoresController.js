@@ -165,8 +165,6 @@ const eliminarConductor = async (req, res) => {
 
 const getConductoresDisponibles = async (req, res) => {
   try {
-    const idEmpresa = req.user?.idEmpresa || 1; // Fallback a empresa 1 si no hay usuario
-
     const [conductores] = await pool.query(`
       SELECT
         c.idConductor,
@@ -177,15 +175,13 @@ const getConductoresDisponibles = async (req, res) => {
       FROM Conductores c
       JOIN Usuarios u ON c.idUsuario = u.idUsuario
       WHERE c.estConductor = 'ACTIVO'
-      AND c.idEmpresa = ?  -- ✅ Filtrar por empresa del usuario
       AND c.idConductor NOT IN (
         SELECT DISTINCT idConductorAsignado
         FROM Vehiculos
         WHERE idConductorAsignado IS NOT NULL
-        AND idEmpresa = ?  -- ✅ Filtrar vehículos por empresa también
       )
       ORDER BY u.nomUsuario ASC
-    `, [idEmpresa, idEmpresa]);
+    `);
 
     res.json(conductores);
   } catch (error) {

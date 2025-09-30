@@ -101,45 +101,18 @@ class User {
   }
 
   static async getUserWithDetails(id) {
-    const [rows] = await pool.query(`
-        SELECT
-            u.idUsuario as id,
-            u.email,
-            u.nomUsuario,
-            u.apeUsuario,
-            u.numDocUsuario,
-            u.telUsuario,
-            u.estActivo,
-            u.fecCreUsuario,
-            u.fecUltAcceso,
-            r.nomRol as role,
-            r.idRol as roleId,
-            e.idEmpresa as empresaId,        // ✅ CAMPO CRÍTICO
-            e.nomEmpresa as empresaName,
-            e.estEmpresa as empresaActive
+    try {
+      const [rows] = await pool.query(`
+        SELECT u.*, r.nomRol as rol, e.nomEmpresa
         FROM Usuarios u
         JOIN Roles r ON u.idRol = r.idRol
-        JOIN Empresas e ON u.idEmpresa = e.idEmpresa  // ✅ JOIN con Empresas
+        JOIN Empresas e ON u.idEmpresa = e.idEmpresa
         WHERE u.idUsuario = ?
-    `, [id]);
-
-    if (rows.length > 0) {
-        const user = rows[0];
-        return {
-            id: user.id,
-            email: user.email,
-            name: user.nomUsuario,
-            empresaId: user.empresaId,      // ✅ INCLUIR empresaId
-            empresaName: user.empresaName,
-            role: user.role,
-            telefono: user.telUsuario,
-            documento: user.numDocUsuario,
-            activo: user.estActivo,
-            fechaCreacion: user.fecCreUsuario,
-            ultimoAcceso: user.fecUltAcceso
-        };
+      `, [id]);
+      return rows[0];
+    } catch (error) {
+      throw error;
     }
-    return null;
   }
 }
 

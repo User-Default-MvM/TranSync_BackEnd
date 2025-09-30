@@ -219,26 +219,25 @@ const getRoles = async (req, res) => {
 
 const createRole = async (req, res) => {
     try {
-        const { name } = req.body;
+        const { name, description, permissions } = req.body;
 
         if (!name) {
             return res.status(400).json({ message: 'Nombre del rol es requerido' });
         }
 
         const [result] = await pool.query(
-            "INSERT INTO Roles (nomRol) VALUES (?)",
-            [name]
+            "INSERT INTO Roles (nomRol, descripcion) VALUES (?, ?)",
+            [name, description || '']
         );
 
         res.status(201).json({
             id: result.insertId,
-            name
+            name,
+            description: description || '',
+            permissions: permissions || []
         });
     } catch (error) {
         console.error("Error al crear rol:", error);
-        if (error.code === 'ER_DUP_ENTRY') {
-            return res.status(409).json({ message: 'Ya existe un rol con ese nombre.' });
-        }
         res.status(500).json({ message: "Error interno del servidor." });
     }
 };
@@ -246,15 +245,15 @@ const createRole = async (req, res) => {
 const updateRole = async (req, res) => {
     try {
         const { id } = req.params;
-        const { name } = req.body;
+        const { name, description, permissions } = req.body;
 
         if (!name) {
             return res.status(400).json({ message: 'Nombre del rol es requerido' });
         }
 
         const [result] = await pool.query(
-            "UPDATE Roles SET nomRol = ? WHERE idRol = ?",
-            [name, id]
+            "UPDATE Roles SET nomRol = ?, descripcion = ? WHERE idRol = ?",
+            [name, description || '', id]
         );
 
         if (result.affectedRows === 0) {
@@ -263,13 +262,12 @@ const updateRole = async (req, res) => {
 
         res.json({
             id: parseInt(id),
-            name
+            name,
+            description: description || '',
+            permissions: permissions || []
         });
     } catch (error) {
         console.error("Error al actualizar rol:", error);
-        if (error.code === 'ER_DUP_ENTRY') {
-            return res.status(409).json({ message: 'Ya existe un rol con ese nombre.' });
-        }
         res.status(500).json({ message: "Error interno del servidor." });
     }
 };

@@ -1,4 +1,5 @@
-const path = require('path');
+// src/controllers/authController.js 
+
 const pool = require("../config/db");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
@@ -58,8 +59,8 @@ const register = async (req, res) => {
         const passwordHash = await bcrypt.hash(password, salt);
 
         const [userResult] = await connection.query(
-            `INSERT INTO Usuarios
-            (email, passwordHash, nomUsuario, apeUsuario, numDocUsuario, telUsuario, idRol, idEmpresa)
+            `INSERT INTO Usuarios 
+            (email, passwordHash, nomUsuario, apeUsuario, numDocUsuario, telUsuario, idRol, idEmpresa) 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
             [email, passwordHash, nomUsuario, apeUsuario, numDocUsuario, telUsuario, idRol, idEmpresa]
         );
@@ -184,7 +185,7 @@ const register = async (req, res) => {
     }
 };
 
-// LOGIN - MEJORADO CON MÁS DATOS DE USUARIO
+// LOGIN
 const login = async (req, res) => {
     const { email, password } = req.body;
 
@@ -232,44 +233,27 @@ const login = async (req, res) => {
             apellido = user.apeUsuario || "Pendiente";
         }
 
-        // ✅ TOKEN MEJORADO CON TODOS LOS DATOS NECESARIOS
         const token = jwt.sign(
             {
-                idUsuario: user.idUsuario,
-                idEmpresa: user.idEmpresa,    // ✅ Incluir empresaId en token
-                rol: user.rol || user.nomRol,
-                email: user.email,
-                nombre: nombre,               // ✅ Incluir nombre completo
-                apellido: apellido,           // ✅ Incluir apellido
-                telefono: user.telUsuario,    // ✅ Incluir teléfono
-                documento: user.numDocUsuario, // ✅ Incluir documento
-                empresa: user.nomEmpresa,      // ✅ Incluir nombre de empresa
-                activo: user.estActivo,       // ✅ Incluir estado activo
-                fechaCreacion: user.fecCreUsuario // ✅ Incluir fecha de creación
+                id: user.idUsuario,
+                role: user.rol,
+                idEmpresa: user.idEmpresa,
+                empresa: user.nomEmpresa
             },
             process.env.JWT_SECRET,
-            { expiresIn: '24h' }
+            { expiresIn: "8h" }
         );
 
         res.json({
-            status: 'SUCCESS',
-            message: 'Login exitoso',
-            token: token,
+            success: true,
+            token,
             user: {
-                id: user.idUsuario,           // ✅ idUsuario de tabla Usuarios
+                id: user.idUsuario,
+                name: `${nombre} ${apellido}`.trim(),
                 email: user.email,
-                name: user.nomUsuario,        // ✅ nomUsuario de tabla Usuarios
-                empresaId: user.idEmpresa,    // ✅ idEmpresa de tabla Usuarios - CAMPO CRÍTICO
-                empresa: user.nomEmpresa,     // ✅ nomEmpresa de tabla Empresas
-                role: user.rol || user.nomRol,
-                telefono: user.telUsuario,
-                documento: user.numDocUsuario,
-                activo: user.estActivo,
-                fechaCreacion: user.fecCreUsuario
-            },
-            empresa: {
-                id: user.idEmpresa,
-                nombre: user.nomEmpresa
+                role: user.rol,
+                empresa: user.nomEmpresa,
+                idEmpresa: user.idEmpresa
             }
         });
 
@@ -283,13 +267,8 @@ const login = async (req, res) => {
 const verifyAccount = async (req, res) => {
     const { token } = req.query;
 
-    // Creamos las rutas a nuestros archivos HTML de forma segura
-    const successPath = path.join(__dirname, '..', '..', 'public', 'pages', 'exito.html');
-    const errorPath = path.join(__dirname, '..', '..', 'public', 'pages', 'error.html');
-
     if (!token) {
-        // Si no hay token, enviamos la página de error
-        return res.status(400).sendFile(errorPath);
+        return res.status(400).json({ message: "Token de verificación no proporcionado." });
     }
 
     try {
@@ -302,17 +281,13 @@ const verifyAccount = async (req, res) => {
         );
 
         if (result.affectedRows === 0) {
-            // Si el usuario no se encuentra o ya está verificado, es un error
-            return res.status(404).sendFile(errorPath);
+            return res.status(404).json({ message: 'Usuario no encontrado o ya verificado.' });
         }
 
-        // ¡Éxito! Enviamos la página de cuenta verificada
-        res.status(200).sendFile(successPath);
-
+        res.status(200).json({ message: 'Cuenta verificada exitosamente.' });
     } catch (error) {
         console.error("Error al verificar cuenta:", error);
-        // Si el token es inválido o expiró, enviamos la página de error
-        return res.status(400).sendFile(errorPath);
+        return res.status(400).json({ message: "Token inválido o expirado." });
     }
 };
 // OLVIDE MI CONTRASEÑA
@@ -545,10 +520,10 @@ const logout = async (req, res) => {
     }
 };
 
-// OBTENER PERFIL DEL USUARIO - MEJORADO
+// OBTENER PERFIL DEL USUARIO
 const getProfile = async (req, res) => {
     try {
-        const userId = req.user.idUsuario;
+        const userId = req.user.id;
 
         const query = `
             SELECT u.idUsuario, u.email, u.nomUsuario, u.apeUsuario, u.numDocUsuario, u.telUsuario,
@@ -585,11 +560,11 @@ const getProfile = async (req, res) => {
     }
 };
 
-// VERIFICAR TOKEN - MEJORADO
+// VERIFICAR TOKEN
 const verifyToken = async (req, res) => {
     try {
         // El middleware ya verificó el token, solo devolvemos la información del usuario
-        const userId = req.user.idUsuario;
+        const userId = req.user.id;
 
         const query = `
             SELECT u.idUsuario, u.email, u.nomUsuario, u.apeUsuario, u.numDocUsuario, u.telUsuario,
@@ -616,9 +591,7 @@ const verifyToken = async (req, res) => {
                 email: user.email,
                 role: user.rol,
                 empresa: user.nomEmpresa,
-                idEmpresa: user.idEmpresa,
-                telefono: user.telUsuario,
-                documento: user.numDocUsuario
+                idEmpresa: user.idEmpresa
             }
         });
     } catch (error) {
@@ -630,7 +603,7 @@ const verifyToken = async (req, res) => {
 // ACTUALIZAR PERFIL
 const updateProfile = async (req, res) => {
     try {
-        const userId = req.user.idUsuario;
+        const userId = req.user.id;
         const { name, email } = req.body;
 
         if (!name || !email) {
@@ -679,7 +652,7 @@ const updateProfile = async (req, res) => {
 // CAMBIAR CONTRASEÑA
 const changePassword = async (req, res) => {
     try {
-        const userId = req.user.idUsuario;
+        const userId = req.user.id;
         const { currentPassword, newPassword, confirmPassword } = req.body;
 
         if (!currentPassword || !newPassword || !confirmPassword) {
@@ -815,10 +788,6 @@ const testEmailService = async (req, res) => {
                         padding: 20px;
                         text-align: center;
                     }
-                    .email-header h1 {
-                        margin: 0;
-                        font-size: 24px;
-                    }
                     .email-body {
                         padding: 30px;
                         color: #333333;
@@ -883,44 +852,6 @@ function esPasswordSegura(password) {
     return regex.test(password);
 }
 
-// RECUPERACIÓN DE SESIÓN - Nueva función para manejar datos de usuario incompletos
-const recoverSession = async (req, res) => {
-    try {
-        const { token, userId } = req.body;
-
-        if (!token && !userId) {
-            return res.status(400).json({
-                message: "Token o ID de usuario requerido para recuperación de sesión."
-            });
-        }
-
-        // Usar el servicio de recuperación de sesión
-        const sessionRecoveryService = require('../services/sessionRecoveryService');
-        const result = await sessionRecoveryService.recoverUserSession(token, userId);
-
-        if (result.success) {
-            res.json({
-                success: true,
-                message: 'Sesión recuperada exitosamente',
-                userData: result.userData,
-                token: result.token,
-                recovered: true
-            });
-        } else {
-            res.status(400).json({
-                success: false,
-                message: result.error,
-                canRetry: result.canRetry
-            });
-        }
-    } catch (error) {
-        console.error("Error recuperando sesión:", error);
-        res.status(500).json({
-            message: "Error interno del servidor al recuperar sesión."
-        });
-    }
-};
-
 module.exports = {
     register,
     login,
@@ -934,6 +865,5 @@ module.exports = {
     changePassword,
     healthCheck,
     testEmailService,
-    recoverSession,
     esPasswordSegura
 };

@@ -11,15 +11,18 @@ router.use(authMiddleware);
 // ✅ Ruta para SELECT (id + nombre)
 router.get('/utils/select', rutasController.getRutasSelect);
 
+// ✅ Obtener paradas de una ruta específica
+router.get('/:id/paradas', rutasController.getParadasRuta);
+
 // === CRUD de rutas ===
 // Obtener todas las rutas
-router.get('/', allowRoles('GESTOR', 'SUPERADMIN'), rutasController.getRutas);
+router.get('/', allowRoles('ADMINISTRADOR', 'SUPERADMIN'), rutasController.getRutas);
 
 // Crear una nueva ruta
-router.post('/', allowRoles('GESTOR', 'SUPERADMIN'), rutasController.crearRuta);
+router.post('/', allowRoles('ADMINISTRADOR', 'SUPERADMIN'), rutasController.crearRuta);
 
 // Actualizar ruta
-router.put('/:id', allowRoles('GESTOR', 'SUPERADMIN'), rutasController.actualizarRuta);
+router.put('/:id', allowRoles('ADMINISTRADOR', 'SUPERADMIN'), rutasController.actualizarRuta);
 
 // Eliminar ruta (solo SUPERADMIN)
 router.delete('/:id', allowRoles('SUPERADMIN'), rutasController.eliminarRuta);

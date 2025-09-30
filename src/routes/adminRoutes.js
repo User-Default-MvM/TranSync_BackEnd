@@ -14,10 +14,10 @@ router.use(authMiddleware);
 // ================================
 
 // GET /api/admin/users - Listar usuarios con filtros
-router.get("/users", allowRoles("SUPERADMIN", "GESTOR"), adminController.getUsers);
+router.get("/users", allowRoles("SUPERADMIN", "ADMINISTRADOR"), adminController.getUsers);
 
 // GET /api/admin/conductores-gestores - Listar conductores y gestores
-router.get("/conductores-gestores", allowRoles("SUPERADMIN", "GESTOR"), adminController.getConductoresYGestionadores);
+router.get("/conductores-gestores", allowRoles("SUPERADMIN", "ADMINISTRADOR"), adminController.getConductoresYGestionadores);
 
 // DELETE /api/admin/users/:idUsuario - Eliminar usuario
 router.delete("/users/:idUsuario", allowRoles("SUPERADMIN"), adminController.eliminarUsuario);
@@ -46,13 +46,13 @@ router.delete("/roles/:id", allowRoles("SUPERADMIN"), adminController.deleteRole
 // ================================
 
 // GET /api/admin/stats - Estadísticas generales
-router.get("/stats", allowRoles("SUPERADMIN", "GESTOR"), adminController.getStats);
+router.get("/stats", allowRoles("SUPERADMIN", "ADMINISTRADOR"), adminController.getStats);
 
 // GET /api/admin/stats/users - Estadísticas de usuarios
-router.get("/stats/users", allowRoles("SUPERADMIN", "GESTOR"), adminController.getUserStats);
+router.get("/stats/users", allowRoles("SUPERADMIN", "ADMINISTRADOR"), adminController.getUserStats);
 
 // GET /api/admin/stats/system - Estadísticas de sistema
-router.get("/stats/system", allowRoles("SUPERADMIN", "GESTOR"), adminController.getSystemStats);
+router.get("/stats/system", allowRoles("SUPERADMIN", "ADMINISTRADOR"), adminController.getSystemStats);
 
 // ================================
 // CONFIGURACIÓN DEL SISTEMA
@@ -79,7 +79,7 @@ router.get("/audit", allowRoles("SUPERADMIN"), adminController.getAuditLogs);
 // ================================
 
 // GET /api/admin/access-check - Verificar permisos de administrador
-router.get("/access-check", allowRoles("SUPERADMIN", "GESTOR"), adminController.checkAdminAccess);
+router.get("/access-check", allowRoles("SUPERADMIN", "ADMINISTRADOR"), adminController.checkAdminAccess);
 
 // GET /api/admin/health - Health check del sistema de administración
 router.get("/health", adminController.healthCheck);

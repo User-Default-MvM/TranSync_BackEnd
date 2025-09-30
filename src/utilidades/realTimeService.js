@@ -61,56 +61,47 @@ class RealTimeService {
     try {
       const { token, userId, empresaId, rol } = authData;
 
-      // ✅ VALIDACIÓN MEJORADA: Verificar datos mínimos requeridos
-      if (!token || !userId) {
+      if (!token || !userId || !empresaId) {
         socket.emit('auth:error', {
-          message: 'Datos de autenticación incompletos - token y userId requeridos',
+          message: 'Datos de autenticación incompletos',
           timestamp: new Date()
         });
         socket.disconnect();
         return;
       }
 
-      // ✅ Si no hay empresaId, intentar obtenerla del token
-      let finalEmpresaId = empresaId;
-      let finalRol = rol;
-
-      if (!finalEmpresaId) {
-        try {
-          const jwt = require('jsonwebtoken');
-          const decoded = jwt.verify(token, process.env.JWT_SECRET);
-          finalEmpresaId = decoded.idEmpresa;
-          finalRol = decoded.rol || rol;
-        } catch (error) {
-          socket.emit('auth:error', {
-            message: 'Token inválido y empresaId no proporcionado',
-            timestamp: new Date()
-          });
-          socket.disconnect();
-          return;
-        }
-      }
+      // Aquí podrías validar el token JWT si es necesario
+      // Por simplicidad, asumimos que el token es válido si llega hasta aquí
 
       socket.userId = userId;
-      socket.empresaId = finalEmpresaId;
-      socket.rol = finalRol || 'USER';
+      socket.empresaId = empresaId;
+      socket.rol = rol || 'USER';
       socket.authenticated = true;
+      socket.connectedAt = new Date();
 
-      // ✅ LOGGING MEJORADO
-      console.log(`✅ Cliente autenticado: ${userId} - Empresa: ${finalEmpresaId} - Rol: ${socket.rol}`);
-
-      // Registrar cliente conectado
+      // Registrar cliente
       this.registerClient(socket);
 
-      // Unir a salas incluyendo empresa
+      // Unir a salas
       this.joinRooms(socket);
 
-    } catch (error) {
-      console.error('❌ Error en autenticación WebSocket:', error);
-      socket.emit('auth:error', {
-        message: 'Error interno de autenticación',
+      // Confirmar autenticación
+      socket.emit('auth:success', {
+        message: 'Autenticación exitosa',
+        userId: userId,
+        empresaId: empresaId,
         timestamp: new Date()
       });
+
+      console.log(`✅ Cliente autenticado: ${userId} (${empresaId})`);
+
+    } catch (error) {
+      console.error('❌ Error en autenticación:', error);
+      socket.emit('auth:error', {
+        message: 'Error interno del servidor',
+        timestamp: new Date()
+      });
+      socket.disconnect();
     }
   }
 
@@ -173,29 +164,11 @@ class RealTimeService {
   handleConnectionError(socket, error) {
     console.error(`❌ Error de conexión para socket ${socket.id}:`, error);
 
-    // Solo desconectar si es un error crítico
-    const criticalErrors = ['authentication failed', 'invalid token', 'unauthorized'];
-    const isCritical = criticalErrors.some(critical =>
-      error.message?.toLowerCase().includes(critical)
-    );
-
-    if (isCritical && socket.authenticated) {
-      socket.emit('connection:error', {
-        socketId: socket.id,
-        error: error.message,
-        timestamp: new Date(),
-        action: 'disconnect'
-      });
-      socket.disconnect();
-    } else {
-      // Para errores no críticos, solo notificar pero mantener conexión
-      socket.emit('connection:warning', {
-        socketId: socket.id,
-        error: error.message,
-        timestamp: new Date(),
-        action: 'continue'
-      });
-    }
+    this.emit('connection:error', {
+      socketId: socket.id,
+      error: error.message,
+      timestamp: new Date()
+    });
   }
 
   /**
