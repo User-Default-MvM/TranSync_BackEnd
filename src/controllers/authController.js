@@ -1,4 +1,3 @@
-// src/controllers/authController.js 
 const path = require('path');
 const pool = require("../config/db");
 const bcrypt = require("bcryptjs");
@@ -59,8 +58,8 @@ const register = async (req, res) => {
         const passwordHash = await bcrypt.hash(password, salt);
 
         const [userResult] = await connection.query(
-            `INSERT INTO Usuarios 
-            (email, passwordHash, nomUsuario, apeUsuario, numDocUsuario, telUsuario, idRol, idEmpresa) 
+            `INSERT INTO Usuarios
+            (email, passwordHash, nomUsuario, apeUsuario, numDocUsuario, telUsuario, idRol, idEmpresa)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
             [email, passwordHash, nomUsuario, apeUsuario, numDocUsuario, telUsuario, idRol, idEmpresa]
         );
@@ -185,7 +184,7 @@ const register = async (req, res) => {
     }
 };
 
-// LOGIN
+// LOGIN - MEJORADO CON MÁS DATOS DE USUARIO
 const login = async (req, res) => {
     const { email, password } = req.body;
 
@@ -233,12 +232,17 @@ const login = async (req, res) => {
             apellido = user.apeUsuario || "Pendiente";
         }
 
+        // ✅ TOKEN MEJORADO CON TODOS LOS DATOS NECESARIOS
         const token = jwt.sign(
             {
                 idUsuario: user.idUsuario,
                 idEmpresa: user.idEmpresa,    // ✅ Incluir empresaId en token
                 rol: user.rol || user.nomRol,
-                email: user.email
+                email: user.email,
+                nombre: nombre,               // ✅ Incluir nombre completo
+                apellido: apellido,           // ✅ Incluir apellido
+                telefono: user.telUsuario,    // ✅ Incluir teléfono
+                documento: user.numDocUsuario // ✅ Incluir documento
             },
             process.env.JWT_SECRET,
             { expiresIn: '24h' }
@@ -538,7 +542,7 @@ const logout = async (req, res) => {
     }
 };
 
-// OBTENER PERFIL DEL USUARIO
+// OBTENER PERFIL DEL USUARIO - MEJORADO
 const getProfile = async (req, res) => {
     try {
         const userId = req.user.idUsuario;
@@ -578,7 +582,7 @@ const getProfile = async (req, res) => {
     }
 };
 
-// VERIFICAR TOKEN
+// VERIFICAR TOKEN - MEJORADO
 const verifyToken = async (req, res) => {
     try {
         // El middleware ya verificó el token, solo devolvemos la información del usuario
@@ -609,7 +613,9 @@ const verifyToken = async (req, res) => {
                 email: user.email,
                 role: user.rol,
                 empresa: user.nomEmpresa,
-                idEmpresa: user.idEmpresa
+                idEmpresa: user.idEmpresa,
+                telefono: user.telUsuario,
+                documento: user.numDocUsuario
             }
         });
     } catch (error) {
@@ -806,6 +812,10 @@ const testEmailService = async (req, res) => {
                         padding: 20px;
                         text-align: center;
                     }
+                    .email-header h1 {
+                        margin: 0;
+                        font-size: 24px;
+                    }
                     .email-body {
                         padding: 30px;
                         color: #333333;
@@ -870,6 +880,44 @@ function esPasswordSegura(password) {
     return regex.test(password);
 }
 
+// RECUPERACIÓN DE SESIÓN - Nueva función para manejar datos de usuario incompletos
+const recoverSession = async (req, res) => {
+    try {
+        const { token, userId } = req.body;
+
+        if (!token && !userId) {
+            return res.status(400).json({
+                message: "Token o ID de usuario requerido para recuperación de sesión."
+            });
+        }
+
+        // Usar el servicio de recuperación de sesión
+        const sessionRecoveryService = require('../services/sessionRecoveryService');
+        const result = await sessionRecoveryService.recoverUserSession(token, userId);
+
+        if (result.success) {
+            res.json({
+                success: true,
+                message: 'Sesión recuperada exitosamente',
+                userData: result.userData,
+                token: result.token,
+                recovered: true
+            });
+        } else {
+            res.status(400).json({
+                success: false,
+                message: result.error,
+                canRetry: result.canRetry
+            });
+        }
+    } catch (error) {
+        console.error("Error recuperando sesión:", error);
+        res.status(500).json({
+            message: "Error interno del servidor al recuperar sesión."
+        });
+    }
+};
+
 module.exports = {
     register,
     login,
@@ -883,5 +931,6 @@ module.exports = {
     changePassword,
     healthCheck,
     testEmailService,
+    recoverSession,
     esPasswordSegura
 };

@@ -1,5 +1,3 @@
-// src/routes/dashboardRoutes.js
-
 const express = require("express");
 const router = express.Router();
 const dashboardController = require("../controllers/dashboardController");
@@ -26,26 +24,26 @@ router.get("/graficos",
 );
 
 // Alertas activas del sistema
-router.get("/alertas", 
-    allowRoles("SUPERADMIN", "GESTOR"), 
+router.get("/alertas",
+    allowRoles("SUPERADMIN", "GESTOR"),
     dashboardController.getActiveAlerts
 );
 
 // Actividad reciente del sistema
-router.get("/actividad", 
-    allowRoles("SUPERADMIN", "GESTOR"), 
+router.get("/actividad",
+    allowRoles("SUPERADMIN", "GESTOR"),
     dashboardController.getRecentActivity
 );
 
 // Indicadores clave de rendimiento (KPIs)
-router.get("/kpis", 
-    allowRoles("SUPERADMIN", "GESTOR"), 
+router.get("/kpis",
+    allowRoles("SUPERADMIN", "GESTOR"),
     dashboardController.getKPIs
 );
 
 // Resumen ejecutivo por período
-router.get("/resumen-ejecutivo", 
-    allowRoles("SUPERADMIN", "GESTOR"), 
+router.get("/resumen-ejecutivo",
+    allowRoles("SUPERADMIN", "GESTOR"),
     dashboardController.getExecutiveSummary
 );
 
@@ -53,6 +51,49 @@ router.get("/resumen-ejecutivo",
 router.get("/tiempo-real",
     allowRoles("SUPERADMIN", "GESTOR"),
     dashboardController.getRealTimeData
+);
+
+// ========================================
+// RUTA ESPECÍFICA PARA HISTORIAL DE NOTIFICACIONES - CORRECCIÓN DEL ERROR 403
+// ========================================
+// Esta ruta es necesaria para solucionar el error 403 Forbidden
+router.get("/notifications/history",
+    allowRoles("SUPERADMIN", "GESTOR", "CONDUCTOR"),
+    async (req, res) => {
+        try {
+            const idEmpresa = req.user.idEmpresa;
+            const { limit = 10 } = req.query;
+
+            if (!global.dashboardPushService) {
+                return res.status(503).json({
+                    status: 'ERROR',
+                    message: 'DashboardPushService no está disponible'
+                });
+            }
+
+            const history = global.dashboardPushService.getNotificationHistory(
+                idEmpresa,
+                parseInt(limit)
+            );
+
+            res.json({
+                status: 'SUCCESS',
+                message: 'Historial de notificaciones obtenido',
+                data: {
+                    empresaId: idEmpresa,
+                    history,
+                    limit: parseInt(limit),
+                    timestamp: new Date().toISOString()
+                }
+            });
+        } catch (error) {
+            console.error('Error obteniendo historial de notificaciones:', error);
+            res.status(500).json({
+                status: 'ERROR',
+                message: 'Error interno del servidor'
+            });
+        }
+    }
 );
 
 // Control de actualizaciones automáticas del dashboard
@@ -696,8 +737,8 @@ router.put("/notifications/:notificationId/acknowledge",
 // ========================================
 // RUTA DE PRUEBA PARA VERIFICAR CONECTIVIDAD
 // ========================================
-router.get("/test", 
-    allowRoles("SUPERADMIN", "GESTOR"), 
+router.get("/test",
+    allowRoles("SUPERADMIN", "GESTOR"),
     (req, res) => {
         res.json({
             status: 'success',
@@ -730,6 +771,7 @@ router.use((req, res) => {
         'GET /api/dashboard/kpis?fechaInicio={YYYY-MM-DD}&fechaFin={YYYY-MM-DD}',
         'GET /api/dashboard/resumen-ejecutivo?periodo={dia|semana|mes|trimestre}',
         'GET /api/dashboard/tiempo-real',
+        'GET /api/dashboard/notifications/history?limit={number}',
         'POST /api/dashboard/start-updates',
         'POST /api/dashboard/stop-updates',
         'GET /api/dashboard/update-stats',
