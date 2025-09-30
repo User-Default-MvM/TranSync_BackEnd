@@ -15,38 +15,38 @@ router.get('/utils/select', vehiculosController.getVehiculosSelect);
 
 // Obtener estadísticas de vehículos (ADMIN y SUPERADMIN)
 router.get('/estadisticas', 
-    allowRoles('ADMINISTRADOR', 'SUPERADMIN'), 
+    allowRoles('GESTOR', 'SUPERADMIN'), 
     vehiculosController.getEstadisticasVehiculos
 );
 
 // Verificar vencimientos de documentos (ADMIN y SUPERADMIN)
 router.get('/vencimientos', 
-    allowRoles('ADMINISTRADOR', 'SUPERADMIN'), 
+    allowRoles('GESTOR', 'SUPERADMIN'), 
     vehiculosController.verificarVencimientosVehiculos
 );
 
 // Obtener todos los vehículos (ADMIN y SUPERADMIN)
 router.get('/', 
-    allowRoles('ADMINISTRADOR', 'SUPERADMIN'), 
+    allowRoles('GESTOR', 'SUPERADMIN'), 
     vehiculosController.getVehiculos
 );
 
 // Crear nuevo vehículo (ADMIN y SUPERADMIN)
 router.post('/', 
-    allowRoles('ADMINISTRADOR', 'SUPERADMIN'), 
+    allowRoles('GESTOR', 'SUPERADMIN'), 
     vehiculosController.crearVehiculo
 );
 
 // Generic parametrized routes should come AFTER specific routes
 // Obtener vehículo por ID (ADMIN y SUPERADMIN)
 router.get('/:id', 
-    allowRoles('ADMINISTRADOR', 'SUPERADMIN'), 
+    allowRoles('GESTOR', 'SUPERADMIN'), 
     vehiculosController.getVehiculoById
 );
 
 // Actualizar vehículo (ADMIN y SUPERADMIN)
 router.put('/:id', 
-    allowRoles('ADMINISTRADOR', 'SUPERADMIN'), 
+    allowRoles('GESTOR', 'SUPERADMIN'), 
     vehiculosController.actualizarVehiculo
 );
 
@@ -58,19 +58,19 @@ router.delete('/:id',
 
 // Cambiar estado de vehículo (ADMIN y SUPERADMIN)
 router.patch('/:id/estado', 
-    allowRoles('ADMINISTRADOR', 'SUPERADMIN'), 
+    allowRoles('GESTOR', 'SUPERADMIN'), 
     vehiculosController.cambiarEstadoVehiculo
 );
 
 // Asignar conductor a vehículo (ADMIN y SUPERADMIN)
 router.patch('/:id/asignar-conductor', 
-    allowRoles('ADMINISTRADOR', 'SUPERADMIN'), 
+    allowRoles('GESTOR', 'SUPERADMIN'), 
     vehiculosController.asignarConductorVehiculo
 );
 
 // Desasignar conductor de vehículo (ADMIN y SUPERADMIN)
 router.patch('/:id/desasignar-conductor', 
-    allowRoles('ADMINISTRADOR', 'SUPERADMIN'), 
+    allowRoles('GESTOR', 'SUPERADMIN'), 
     vehiculosController.desasignarConductorVehiculo
 );
 

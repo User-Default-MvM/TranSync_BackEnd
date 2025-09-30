@@ -13,13 +13,13 @@ router.get('/utils/select', rutasController.getRutasSelect);
 
 // === CRUD de rutas ===
 // Obtener todas las rutas
-router.get('/', allowRoles('ADMINISTRADOR', 'SUPERADMIN'), rutasController.getRutas);
+router.get('/', allowRoles('GESTOR', 'SUPERADMIN'), rutasController.getRutas);
 
 // Crear una nueva ruta
-router.post('/', allowRoles('ADMINISTRADOR', 'SUPERADMIN'), rutasController.crearRuta);
+router.post('/', allowRoles('GESTOR', 'SUPERADMIN'), rutasController.crearRuta);
 
 // Actualizar ruta
-router.put('/:id', allowRoles('ADMINISTRADOR', 'SUPERADMIN'), rutasController.actualizarRuta);
+router.put('/:id', allowRoles('GESTOR', 'SUPERADMIN'), rutasController.actualizarRuta);
 
 // Eliminar ruta (solo SUPERADMIN)
 router.delete('/:id', allowRoles('SUPERADMIN'), rutasController.eliminarRuta);
