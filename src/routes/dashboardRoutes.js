@@ -64,11 +64,19 @@ router.get("/notifications/history",
             const idEmpresa = req.user.idEmpresa;
             const { limit = 10 } = req.query;
 
-            if (!global.dashboardPushService) {
-                return res.status(503).json({
+            // ✅ MEJORA: Verificar autenticación del usuario
+            if (!req.user || !req.user.idUsuario) {
+                return res.status(401).json({
                     status: 'ERROR',
-                    message: 'DashboardPushService no está disponible'
+                    message: 'Usuario no autenticado correctamente'
                 });
+            }
+
+            // ✅ MEJORA: Inicializar servicio si no existe
+            if (!global.dashboardPushService) {
+                console.warn('DashboardPushService no inicializado, inicializando...');
+                const DashboardPushService = require("../services/dashboardPushService");
+                global.dashboardPushService = new DashboardPushService(global.realTimeService);
             }
 
             const history = global.dashboardPushService.getNotificationHistory(
@@ -83,14 +91,20 @@ router.get("/notifications/history",
                     empresaId: idEmpresa,
                     history,
                     limit: parseInt(limit),
-                    timestamp: new Date().toISOString()
+                    timestamp: new Date().toISOString(),
+                    user: {
+                        id: req.user.idUsuario,
+                        role: req.user.rol,
+                        empresaId: req.user.idEmpresa
+                    }
                 }
             });
         } catch (error) {
             console.error('Error obteniendo historial de notificaciones:', error);
             res.status(500).json({
                 status: 'ERROR',
-                message: 'Error interno del servidor'
+                message: 'Error interno del servidor',
+                ...(process.env.NODE_ENV === 'development' && { error: error.message })
             });
         }
     }

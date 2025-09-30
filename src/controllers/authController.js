@@ -242,7 +242,10 @@ const login = async (req, res) => {
                 nombre: nombre,               // ✅ Incluir nombre completo
                 apellido: apellido,           // ✅ Incluir apellido
                 telefono: user.telUsuario,    // ✅ Incluir teléfono
-                documento: user.numDocUsuario // ✅ Incluir documento
+                documento: user.numDocUsuario, // ✅ Incluir documento
+                empresa: user.nomEmpresa,      // ✅ Incluir nombre de empresa
+                activo: user.estActivo,       // ✅ Incluir estado activo
+                fechaCreacion: user.fecCreUsuario // ✅ Incluir fecha de creación
             },
             process.env.JWT_SECRET,
             { expiresIn: '24h' }

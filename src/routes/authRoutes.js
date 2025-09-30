@@ -48,7 +48,7 @@ router.put('/change-password', authMiddleware, authController.changePassword);
 router.post('/logout', authMiddleware, authController.logout);
 
 // ========================================
-// RUTA DE RECUPERACIÓN DE SESIÓN - NUEVA FUNCIONALIDAD
+// RUTAS DE RECUPERACIÓN DE SESIÓN - NUEVA FUNCIONALIDAD
 // ========================================
 // Esta ruta ayuda a recuperar sesiones con datos de usuario incompletos
 router.post('/recover-session', async (req, res) => {
@@ -84,6 +84,104 @@ router.post('/recover-session', async (req, res) => {
         console.error("Error recuperando sesión:", error);
         res.status(500).json({
             message: "Error interno del servidor al recuperar sesión."
+        });
+    }
+});
+
+// Esta ruta verifica y refresca tokens con datos completos del usuario
+router.post('/verify-and-refresh', async (req, res) => {
+    try {
+        const authHeader = req.headers.authorization;
+
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            return res.status(401).json({
+                message: 'Token no proporcionado.',
+                code: 'NO_TOKEN'
+            });
+        }
+
+        const token = authHeader.split(' ')[1];
+        const jwt = require('jsonwebtoken');
+
+        // Verificar token actual
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+        // Recuperar datos completos del usuario
+        const pool = require('../config/db');
+        const query = `
+            SELECT u.idUsuario, u.email, u.nomUsuario, u.apeUsuario, u.numDocUsuario, u.telUsuario,
+                   r.nomRol as rol, e.nomEmpresa, e.idEmpresa
+            FROM Usuarios u
+            JOIN Roles r ON u.idRol = r.idRol
+            JOIN Empresas e ON u.idEmpresa = e.idEmpresa
+            WHERE u.idUsuario = ?
+        `;
+
+        const [rows] = await pool.query(query, [decoded.idUsuario]);
+        const user = rows[0];
+
+        if (!user) {
+            return res.status(404).json({
+                message: 'Usuario no encontrado.',
+                code: 'USER_NOT_FOUND'
+            });
+        }
+
+        // Generar nuevo token con datos completos
+        const newToken = jwt.sign(
+            {
+                idUsuario: user.idUsuario,
+                idEmpresa: user.idEmpresa,
+                rol: user.rol,
+                email: user.email,
+                nombre: user.nomUsuario,
+                apellido: user.apeUsuario,
+                telefono: user.telUsuario,
+                documento: user.numDocUsuario,
+                empresa: user.nomEmpresa,
+                activo: user.estActivo,
+                fechaCreacion: user.fecCreUsuario
+            },
+            process.env.JWT_SECRET,
+            { expiresIn: '24h' }
+        );
+
+        res.json({
+            success: true,
+            message: 'Token verificado y actualizado exitosamente',
+            token: newToken,
+            user: {
+                id: user.idUsuario,
+                email: user.email,
+                name: user.nomUsuario,
+                empresaId: user.idEmpresa,
+                empresa: user.nomEmpresa,
+                role: user.rol,
+                telefono: user.telUsuario,
+                documento: user.numDocUsuario,
+                activo: user.estActivo,
+                fechaCreacion: user.fecCreUsuario
+            }
+        });
+
+    } catch (error) {
+        if (error.name === 'JsonWebTokenError') {
+            return res.status(401).json({
+                message: 'Token inválido.',
+                code: 'INVALID_TOKEN'
+            });
+        }
+
+        if (error.name === 'TokenExpiredError') {
+            return res.status(401).json({
+                message: 'Token expirado. Inicie sesión nuevamente.',
+                code: 'TOKEN_EXPIRED'
+            });
+        }
+
+        console.error("Error verificando y refrescando token:", error);
+        res.status(500).json({
+            message: "Error interno del servidor."
         });
     }
 });
