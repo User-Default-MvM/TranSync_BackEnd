@@ -10,7 +10,7 @@ const bcrypt = require("bcryptjs");
 // 1. OBTENER PERFIL DEL USUARIO
 const getProfile = async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = req.user.idUsuario;
 
         const query = `
             SELECT
@@ -81,7 +81,7 @@ const getProfile = async (req, res) => {
 // 2. ACTUALIZAR PERFIL DEL USUARIO
 const updateProfile = async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = req.user.idUsuario;
         const { nomUsuario, apeUsuario, email, telUsuario } = req.body;
 
         // Validaciones
@@ -198,7 +198,7 @@ const updateProfile = async (req, res) => {
 // 3. CAMBIAR CONTRASEÑA
 const changePassword = async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = req.user.idUsuario;
         const { currentPassword, newPassword, confirmPassword } = req.body;
 
         // Validaciones
@@ -319,7 +319,7 @@ const changePassword = async (req, res) => {
 // 4. OBTENER PREFERENCIAS DEL USUARIO
 const getPreferences = async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = req.user.idUsuario;
 
         const query = `
             SELECT preferences
@@ -374,7 +374,7 @@ const getPreferences = async (req, res) => {
 // 5. ACTUALIZAR PREFERENCIAS DEL USUARIO
 const updatePreferences = async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = req.user.idUsuario;
         const preferences = req.body;
 
         if (!preferences || typeof preferences !== 'object') {
@@ -426,7 +426,7 @@ const updatePreferences = async (req, res) => {
 // 6. OBTENER CONFIGURACIÓN DE NOTIFICACIONES
 const getNotificationSettings = async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = req.user.idUsuario;
 
         const query = `
             SELECT notificationSettings
@@ -475,7 +475,7 @@ const getNotificationSettings = async (req, res) => {
 // 7. ACTUALIZAR CONFIGURACIÓN DE NOTIFICACIONES
 const updateNotificationSettings = async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = req.user.idUsuario;
         const settings = req.body;
 
         if (!settings || typeof settings !== 'object') {
@@ -527,7 +527,7 @@ const updateNotificationSettings = async (req, res) => {
 // 8. OBTENER INFORMACIÓN DE LA EMPRESA
 const getCompanyInfo = async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = req.user.idUsuario;
 
         const query = `
             SELECT e.*
@@ -577,7 +577,7 @@ const getCompanyInfo = async (req, res) => {
 // 9. OBTENER ACTIVIDAD DEL USUARIO
 const getUserActivity = async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = req.user.idUsuario;
         const { limit = 10, offset = 0 } = req.query;
 
         const query = `
@@ -625,7 +625,7 @@ const getUserActivity = async (req, res) => {
 // 10. VERIFICAR ESTADO DE LA CUENTA
 const getAccountStatus = async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = req.user.idUsuario;
 
         const query = `
             SELECT

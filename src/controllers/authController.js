@@ -541,7 +541,7 @@ const logout = async (req, res) => {
 // OBTENER PERFIL DEL USUARIO
 const getProfile = async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = req.user.idUsuario;
 
         const query = `
             SELECT u.idUsuario, u.email, u.nomUsuario, u.apeUsuario, u.numDocUsuario, u.telUsuario,
@@ -582,7 +582,7 @@ const getProfile = async (req, res) => {
 const verifyToken = async (req, res) => {
     try {
         // El middleware ya verificó el token, solo devolvemos la información del usuario
-        const userId = req.user.id;
+        const userId = req.user.idUsuario;
 
         const query = `
             SELECT u.idUsuario, u.email, u.nomUsuario, u.apeUsuario, u.numDocUsuario, u.telUsuario,
@@ -621,7 +621,7 @@ const verifyToken = async (req, res) => {
 // ACTUALIZAR PERFIL
 const updateProfile = async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = req.user.idUsuario;
         const { name, email } = req.body;
 
         if (!name || !email) {
@@ -670,7 +670,7 @@ const updateProfile = async (req, res) => {
 // CAMBIAR CONTRASEÑA
 const changePassword = async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = req.user.idUsuario;
         const { currentPassword, newPassword, confirmPassword } = req.body;
 
         if (!currentPassword || !newPassword || !confirmPassword) {
