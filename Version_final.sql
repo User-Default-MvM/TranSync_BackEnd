@@ -648,7 +648,7 @@ INSERT IGNORE INTO UserActivity (idUsuario, type, description, ipAddress, userAg
 -- Tabla: ubicaciones_usuario (Gestión avanzada de geolocalización)
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS ubicaciones_usuario (
-    idUbicacion SERIAL PRIMARY KEY,
+    idUbicacion INT AUTO_INCREMENT NOT NULL PRIMARY KEY,
     idUsuario INT NOT NULL,
     latitud DECIMAL(10, 8) NOT NULL,
     longitud DECIMAL(11, 8) NOT NULL,
@@ -657,7 +657,7 @@ CREATE TABLE IF NOT EXISTS ubicaciones_usuario (
     rumboGrados DECIMAL(5, 2),
     fechaHora TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     fuenteUbicacion VARCHAR(20) DEFAULT 'GPS',
-    dispositivoInfo JSONB,
+    dispositivoInfo JSON,
     FOREIGN KEY (idUsuario) REFERENCES Usuarios(idUsuario) ON DELETE CASCADE
 );
 
@@ -670,7 +670,7 @@ CREATE INDEX IF NOT EXISTS idx_ubicaciones_usuario_coordenadas ON ubicaciones_us
 -- Tabla: puntos_interes (Paradas y lugares importantes)
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS puntos_interes (
-    idPoi SERIAL PRIMARY KEY,
+    idPoi INT AUTO_INCREMENT NOT NULL PRIMARY KEY,
     nombrePoi VARCHAR(100) NOT NULL,
     tipoPoi VARCHAR(50) NOT NULL,
     latitud DECIMAL(10, 8) NOT NULL,
@@ -681,7 +681,7 @@ CREATE TABLE IF NOT EXISTS puntos_interes (
     telefono VARCHAR(20),
     sitioWeb VARCHAR(255),
     idRutaAsociada INT,
-    datosAdicionales JSONB,
+    datosAdicionales JSON,
     FOREIGN KEY (idRutaAsociada) REFERENCES Rutas(idRuta) ON DELETE CASCADE
 );
 
@@ -694,13 +694,13 @@ CREATE INDEX IF NOT EXISTS idx_puntos_interes_coordenadas ON puntos_interes(lati
 -- Tabla: notificaciones_ruta (Sistema de notificaciones en tiempo real)
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS notificaciones_ruta (
-    idNotificacion SERIAL PRIMARY KEY,
+    idNotificacion INT AUTO_INCREMENT NOT NULL PRIMARY KEY,
     idRuta INT NOT NULL,
     tipoNotificacion VARCHAR(50) NOT NULL,
     titulo VARCHAR(200) NOT NULL,
     mensaje TEXT NOT NULL,
     prioridad VARCHAR(20) DEFAULT 'NORMAL',
-    ubicacionAfectada JSONB,
+    ubicacionAfectada JSON,
     tiempoInicio TIMESTAMP,
     tiempoFin TIMESTAMP,
     activa BOOLEAN DEFAULT true,
@@ -717,11 +717,11 @@ CREATE INDEX IF NOT EXISTS idx_notificaciones_ruta_prioridad ON notificaciones_r
 -- Tabla: analytics_ruta_uso (Métricas avanzadas)
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS analytics_ruta_uso (
-    idRegistro SERIAL PRIMARY KEY,
+    idRegistro INT AUTO_INCREMENT NOT NULL PRIMARY KEY,
     idRuta INT NOT NULL,
     idUsuario INT,
-    origenUbicacion JSONB,
-    destinoUbicacion JSONB,
+    origenUbicacion JSON,
+    destinoUbicacion JSON,
     distanciaRealKm DECIMAL(8, 3),
     tiempoRealMin INT,
     tiempoEstimadoMin INT,
@@ -742,10 +742,10 @@ CREATE INDEX IF NOT EXISTS idx_analytics_calificacion ON analytics_ruta_uso(cali
 -- Tabla: auditoria_ubicaciones (Seguridad y privacidad)
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS auditoria_ubicaciones (
-    idAuditoria SERIAL PRIMARY KEY,
+    idAuditoria INT AUTO_INCREMENT NOT NULL PRIMARY KEY,
     idUsuario INT,
     accion VARCHAR(50) NOT NULL,
-    ubicacionOriginal JSONB,
+    ubicacionOriginal JSON,
     ubicacionNueva JSONB,
     ipUsuario INET,
     userAgent TEXT,
@@ -966,4 +966,5 @@ INSERT IGNORE INTO auditoria_ubicaciones (idUsuario, accion, ubicacionOriginal, 
 (2, 'UBICACION_ELIMINADA', '{"lat": 4.7585, "lng": -74.0500}', NULL, '192.168.1.101');
 
 SELECT '✅ Waze-Style: Nuevas funcionalidades agregadas exitosamente' as resultado;
+
 

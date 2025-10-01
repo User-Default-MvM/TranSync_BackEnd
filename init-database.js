@@ -484,10 +484,21 @@ async function initializeDatabase() {
             console.log('ℹ️  Las columnas de Vehiculos ya existen o hubo un problema menor');
         }
 
-        // Crear índices adicionales si no existen
+        // Crear índices adicionales si no existen (solo si las columnas existen)
         try {
+            // Verificar si las columnas existen antes de crear índices
+            const [rutasColumns] = await connection.execute(`
+                SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+                WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'Rutas' AND COLUMN_NAME = 'estRuta'
+            `, [process.env.DB_DATABASE || 'railway']);
+
+            if (rutasColumns.length > 0) {
+                await connection.execute(`
+                    CREATE INDEX IF NOT EXISTS idx_rutas_estado_ubicacion ON Rutas(estRuta, coordenadasRuta);
+                `);
+            }
+
             await connection.execute(`
-                CREATE INDEX IF NOT EXISTS idx_rutas_estado_ubicacion ON Rutas(estRuta, coordenadasRuta);
                 CREATE INDEX IF NOT EXISTS idx_vehiculos_estado_ubicacion ON Vehiculos(estVehiculo, latitudActual, longitudActual);
             `);
             console.log('✅ Índices adicionales creados');
