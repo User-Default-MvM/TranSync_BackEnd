@@ -1,152 +1,315 @@
 // src/services/schedulerService.js
-const pool = require('../config/db');
 
+const cron = require('node-cron');
+const UbicacionUsuario = require('../models/UbicacionUsuario');
+const NotificacionRuta = require('../models/NotificacionRuta');
+
+/**
+ * Servicio de tareas programadas para mantenimiento del sistema Waze-style
+ */
 class SchedulerService {
-  constructor(realTimeService) {
-    this.realTimeService = realTimeService;
-    this.intervals = new Map();
-  }
 
-  // Verificar vencimientos cada hora
-  startExpirationCheck() {
-    const interval = setInterval(async () => {
-      try {
-        await this.checkExpirations();
-      } catch (error) {
-        console.error('❌ Error en verificación programada de vencimientos:', error);
-      }
-    }, 60 * 60 * 1000); // Cada hora
-
-    this.intervals.set('expirationCheck', interval);
-    console.log('⏰ Verificación de vencimientos programada cada hora');
-  }
-
-  // Verificar vencimientos diariamente a las 9 AM
-  startDailyExpirationCheck() {
-    const now = new Date();
-    const next9AM = new Date(now);
-    next9AM.setHours(9, 0, 0, 0);
-
-    if (now > next9AM) {
-      next9AM.setDate(next9AM.getDate() + 1);
+    constructor() {
+        this.jobs = new Map();
+        this.inicializado = false;
     }
 
-    const timeUntil9AM = next9AM - now;
+    /**
+     * Inicializar todas las tareas programadas
+     */
+    inicializar() {
+        if (this.inicializado) {
+            console.log('SchedulerService ya está inicializado');
+            return;
+        }
 
-    setTimeout(() => {
-      // Ejecutar inmediatamente
-      this.checkExpirations();
+        console.log('🚀 Inicializando SchedulerService...');
 
-      // Programar para cada día a las 9 AM
-      const dailyInterval = setInterval(async () => {
+        // Tarea 1: Actualizar posiciones de buses cada 30 segundos (simulado)
+        this.programarActualizacionPosiciones();
+
+        // Tarea 2: Calcular métricas de rutas cada hora
+        this.programarCalculoMetricas();
+
+        // Tarea 3: Limpiar ubicaciones antiguas (> 30 días) diariamente
+        this.programarLimpiezaUbicaciones();
+
+        // Tarea 4: Limpiar notificaciones antiguas (> 90 días) semanalmente
+        this.programarLimpiezaNotificaciones();
+
+        // Tarea 5: Actualizar información de tráfico (simulado) cada 5 minutos
+        this.programarActualizacionTrafico();
+
+        this.inicializado = true;
+        console.log('✅ SchedulerService inicializado correctamente');
+    }
+
+    /**
+     * Programar actualización de posiciones de vehículos
+     */
+    programarActualizacionPosiciones() {
+        // Cada 30 segundos - En producción esto vendría de GPS real de vehículos
+        const job = cron.schedule('*/30 * * * * *', async () => {
+            try {
+                console.log('🔄 Actualizando posiciones de vehículos...');
+
+                // Simular actualización de posiciones de vehículos
+                await this.simularActualizacionPosicionesVehiculos();
+
+                console.log('✅ Posiciones de vehículos actualizadas');
+            } catch (error) {
+                console.error('❌ Error actualizando posiciones de vehículos:', error);
+            }
+        });
+
+        this.jobs.set('actualizarPosiciones', job);
+    }
+
+    /**
+     * Programar cálculo de métricas de rutas
+     */
+    programarCalculoMetricas() {
+        // Cada hora
+        const job = cron.schedule('0 * * * *', async () => {
+            try {
+                console.log('📊 Calculando métricas de rutas...');
+
+                // Aquí iría la lógica para calcular métricas
+                await this.calcularMetricasRutas();
+
+                console.log('✅ Métricas de rutas calculadas');
+            } catch (error) {
+                console.error('❌ Error calculando métricas de rutas:', error);
+            }
+        });
+
+        this.jobs.set('calcularMetricas', job);
+    }
+
+    /**
+     * Programar limpieza de ubicaciones antiguas
+     */
+    programarLimpiezaUbicaciones() {
+        // Diariamente a las 2:00 AM
+        const job = cron.schedule('0 2 * * *', async () => {
+            try {
+                console.log('🧹 Limpiando ubicaciones antiguas...');
+
+                const eliminadas = await UbicacionUsuario.limpiarUbicacionesAntiguas(30);
+
+                console.log(`✅ ${eliminadas} ubicaciones antiguas eliminadas`);
+            } catch (error) {
+                console.error('❌ Error limpiando ubicaciones antiguas:', error);
+            }
+        });
+
+        this.jobs.set('limpiarUbicaciones', job);
+    }
+
+    /**
+     * Programar limpieza de notificaciones antiguas
+     */
+    programarLimpiezaNotificaciones() {
+        // Semanalmente los domingos a las 3:00 AM
+        const job = cron.schedule('0 3 * * 0', async () => {
+            try {
+                console.log('🧹 Limpiando notificaciones antiguas...');
+
+                const eliminadas = await NotificacionRuta.limpiarAntiguas(90);
+
+                console.log(`✅ ${eliminadas} notificaciones antiguas eliminadas`);
+            } catch (error) {
+                console.error('❌ Error limpiando notificaciones antiguas:', error);
+            }
+        });
+
+        this.jobs.set('limpiarNotificaciones', job);
+    }
+
+    /**
+     * Programar actualización de información de tráfico
+     */
+    programarActualizacionTrafico() {
+        // Cada 5 minutos
+        const job = cron.schedule('*/5 * * * *', async () => {
+            try {
+                console.log('🚦 Actualizando información de tráfico...');
+
+                // Simular actualización de tráfico
+                await this.simularActualizacionTrafico();
+
+                console.log('✅ Información de tráfico actualizada');
+            } catch (error) {
+                console.error('❌ Error actualizando información de tráfico:', error);
+            }
+        });
+
+        this.jobs.set('actualizarTrafico', job);
+    }
+
+    /**
+     * Simular actualización de posiciones de vehículos
+     * En producción esto vendría de dispositivos GPS reales
+     */
+    async simularActualizacionPosicionesVehiculos() {
         try {
-          await this.checkExpirations();
+            // Obtener vehículos activos
+            const pool = require('../config/db');
+            const [vehiculos] = await pool.query(`
+                SELECT idVehiculo, numVehiculo, latitudActual, longitudActual
+                FROM Vehiculos
+                WHERE estVehiculo = 'EN_RUTA'
+                AND latitudActual IS NOT NULL
+                AND longitudActual IS NOT NULL
+            `);
+
+            for (const vehiculo of vehiculos) {
+                // Simular pequeño movimiento del vehículo
+                const nuevaLatitud = vehiculo.latitudActual + (Math.random() - 0.5) * 0.001;
+                const nuevaLongitud = vehiculo.longitudActual + (Math.random() - 0.5) * 0.001;
+                const velocidad = 30 + Math.random() * 40; // 30-70 km/h
+
+                // Actualizar posición en base de datos
+                await pool.query(`
+                    UPDATE Vehiculos
+                    SET latitudActual = ?, longitudActual = ?, velocidadActual = ?,
+                        ultimaUbicacion = NOW()
+                    WHERE idVehiculo = ?
+                `, [nuevaLatitud, nuevaLongitud, velocidad, vehiculo.idVehiculo]);
+
+                // Aquí podrías emitir evento WebSocket para actualización en tiempo real
+                // this.emitirActualizacionPosicion(vehiculo.idVehiculo, nuevaLatitud, nuevaLongitud);
+            }
         } catch (error) {
-          console.error('❌ Error en verificación diaria de vencimientos:', error);
+            console.error('Error simulando actualización de posiciones:', error);
+            throw error;
         }
-      }, 24 * 60 * 60 * 1000); // Cada 24 horas
-
-      this.intervals.set('dailyExpirationCheck', dailyInterval);
-    }, timeUntil9AM);
-
-    console.log(`⏰ Verificación diaria de vencimientos programada para las 9:00 AM (en ${Math.round(timeUntil9AM / 1000 / 60)} minutos)`);
-  }
-
-  // Verificar vencimientos de documentos
-  async checkExpirations() {
-    try {
-      const [expirations] = await pool.query(`
-        SELECT
-          'LICENCIA' as tipoDocumento,
-          CONCAT(c.nomConductor, ' ', c.apeConductor) as titular,
-          c.fecVenLicConductor as fechaVencimiento,
-          DATEDIFF(c.fecVenLicConductor, CURDATE()) as diasParaVencer,
-          c.idEmpresa
-        FROM Conductores c
-        WHERE c.fecVenLicConductor BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY)
-
-        UNION ALL
-
-        SELECT
-          'SOAT' as tipoDocumento,
-          CONCAT(v.marVehiculo, ' ', v.modVehiculo, ' - ', v.plaVehiculo) as titular,
-          v.fecVenSOAT as fechaVencimiento,
-          DATEDIFF(v.fecVenSOAT, CURDATE()) as diasParaVencer,
-          v.idEmpresa
-        FROM Vehiculos v
-        WHERE v.fecVenSOAT BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY)
-
-        UNION ALL
-
-        SELECT
-          'TECNOMECANICA' as tipoDocumento,
-          CONCAT(v.marVehiculo, ' ', v.modVehiculo, ' - ', v.plaVehiculo) as titular,
-          v.fecVenTec as fechaVencimiento,
-          DATEDIFF(v.fecVenTec, CURDATE()) as diasParaVencer,
-          v.idEmpresa
-        FROM Vehiculos v
-        WHERE v.fecVenTec BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY)
-      `);
-
-      // Enviar alertas para cada vencimiento
-      for (const expiration of expirations) {
-        if (expiration.diasParaVencer <= 7) { // Solo alertas críticas
-          const notification = {
-            type: 'vencimiento_alerta',
-            title: '⚠️ Alerta de Vencimiento',
-            message: `Documento próximo a vencer: ${expiration.tipoDocumento} - ${expiration.titular}`,
-            data: expiration,
-            priority: 'high'
-          };
-
-          this.realTimeService.sendToEmpresa(expiration.idEmpresa, 'vencimiento:alert', notification);
-        }
-      }
-
-      console.log(`📊 Verificación de vencimientos completada: ${expirations.length} alertas enviadas`);
-
-    } catch (error) {
-      console.error('❌ Error verificando vencimientos:', error);
     }
-  }
 
-  // Detener todos los intervalos
-  stopAll() {
-    this.intervals.forEach((interval, name) => {
-      clearInterval(interval);
-      console.log(`🛑 Intervalo detenido: ${name}`);
-    });
-    this.intervals.clear();
-  }
+    /**
+     * Calcular métricas de rutas
+     */
+    async calcularMetricasRutas() {
+        try {
+            const pool = require('../config/db');
+
+            // Calcular métricas básicas para cada ruta
+            const [rutas] = await pool.query(`
+                SELECT idRuta, COUNT(*) as viajes_hoy
+                FROM Viajes
+                WHERE DATE(fecHorSalViaje) = CURDATE()
+                GROUP BY idRuta
+            `);
+
+            for (const ruta of rutas) {
+                // Aquí podrías calcular métricas más complejas como:
+                // - Tiempo promedio de viaje
+                // - Índice de puntualidad
+                // - Nivel de ocupación promedio
+                // - etc.
+
+                console.log(`Ruta ${ruta.idRuta}: ${ruta.viajes_hoy} viajes hoy`);
+            }
+        } catch (error) {
+            console.error('Error calculando métricas de rutas:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Simular actualización de información de tráfico
+     */
+    async simularActualizacionTrafico() {
+        try {
+            // En producción esto vendría de APIs externas como Google Maps Traffic API
+            const zonasTrafico = [
+                { lat: 4.6482, lng: -74.0648, nivel: 'BAJO' },
+                { lat: 4.7589, lng: -74.0501, nivel: 'MODERADO' },
+                { lat: 6.2308, lng: -75.5906, nivel: 'ALTO' }
+            ];
+
+            for (const zona of zonasTrafico) {
+                // Aquí actualizarías la información de tráfico en la base de datos
+                console.log(`Tráfico ${zona.nivel} en ${zona.lat}, ${zona.lng}`);
+            }
+        } catch (error) {
+            console.error('Error actualizando información de tráfico:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Detener todas las tareas programadas
+     */
+    detener() {
+        console.log('🛑 Deteniendo SchedulerService...');
+
+        for (const [nombre, job] of this.jobs) {
+            job.stop();
+            console.log(`⏹️ Tarea detenida: ${nombre}`);
+        }
+
+        this.jobs.clear();
+        this.inicializado = false;
+
+        console.log('✅ SchedulerService detenido');
+    }
+
+    /**
+     * Obtener estado de todas las tareas
+     */
+    obtenerEstado() {
+        const estado = {};
+
+        for (const [nombre, job] of this.jobs) {
+            estado[nombre] = {
+                running: job.running,
+                scheduled: true
+            };
+        }
+
+        return {
+            inicializado: this.inicializado,
+            totalJobs: this.jobs.size,
+            jobs: estado
+        };
+    }
+
+    /**
+     * Reiniciar una tarea específica
+     */
+    reiniciarJob(nombreJob) {
+        if (this.jobs.has(nombreJob)) {
+            this.jobs.get(nombreJob).stop();
+
+            // Reiniciar según el tipo de job
+            switch (nombreJob) {
+                case 'actualizarPosiciones':
+                    this.programarActualizacionPosiciones();
+                    break;
+                case 'calcularMetricas':
+                    this.programarCalculoMetricas();
+                    break;
+                case 'limpiarUbicaciones':
+                    this.programarLimpiezaUbicaciones();
+                    break;
+                case 'limpiarNotificaciones':
+                    this.programarLimpiezaNotificaciones();
+                    break;
+                case 'actualizarTrafico':
+                    this.programarActualizacionTrafico();
+                    break;
+            }
+
+            console.log(`🔄 Job reiniciado: ${nombreJob}`);
+            return true;
+        }
+
+        return false;
+    }
 }
 
-// Función para inicializar el programador cuando realTimeService esté disponible
-const initializeScheduler = () => {
-  if (!global.realTimeService) {
-    setTimeout(initializeScheduler, 500);
-    return;
-  }
+// Crear instancia singleton
+const schedulerService = new SchedulerService();
 
-  // Iniciar programador
-  const scheduler = new SchedulerService(global.realTimeService);
-
-  // Iniciar verificaciones programadas
-  scheduler.startExpirationCheck();
-  scheduler.startDailyExpirationCheck();
-
-  console.log('✅ Programador de alertas inicializado');
-
-  // Cleanup al cerrar la aplicación
-  process.on('SIGINT', () => {
-    console.log('🛑 Deteniendo programador de alertas...');
-    scheduler.stopAll();
-    process.exit(0);
-  });
-
-  return scheduler;
-};
-
-// Inicializar programador
-const scheduler = initializeScheduler();
-
-module.exports = scheduler;
+module.exports = schedulerService;

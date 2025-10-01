@@ -33,9 +33,13 @@
     "mysql2": "^3.14.3",
     "natural": "^8.1.0",
     "node-cache": "^5.1.2",
+    "node-cron": "^3.0.3",
     "nodemailer": "^7.0.5",
     "@sendgrid/mail": "^8.1.4",
-    "socket.io": "^4.8.1"
+    "socket.io": "^4.8.1",
+    "geolib": "^3.3.4",
+    "haversine-distance": "^1.2.3",
+    "@googlemaps/google-maps-services-js": "^3.4.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.10"
