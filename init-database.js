@@ -455,15 +455,72 @@ async function initializeDatabase() {
 
         // Agregar columnas a tabla Rutas si no existen
         try {
-            await connection.execute(`
-                ALTER TABLE Rutas
-                ADD COLUMN IF NOT EXISTS coordenadasRuta JSON,
-                ADD COLUMN IF NOT EXISTS distanciaKm DECIMAL(8, 3),
-                ADD COLUMN IF NOT EXISTS tiempoEstimadoMin INT,
-                ADD COLUMN IF NOT EXISTS usoContador INT DEFAULT 0,
-                ADD COLUMN IF NOT EXISTS calificacionPromedio DECIMAL(3, 2),
-                ADD COLUMN IF NOT EXISTS datosTrafico JSON
-            `);
+            // Verificar y agregar coordenadasRuta
+            const [coordRuta] = await connection.execute(`
+                SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+                WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'Rutas' AND COLUMN_NAME = 'coordenadasRuta'
+            `, [process.env.DB_DATABASE || 'railway']);
+
+            if (coordRuta.length === 0) {
+                await connection.execute(`ALTER TABLE Rutas ADD COLUMN coordenadasRuta JSON`);
+                console.log('✅ Columna coordenadasRuta agregada');
+            }
+
+            // Verificar y agregar distanciaKm
+            const [distanciaKm] = await connection.execute(`
+                SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+                WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'Rutas' AND COLUMN_NAME = 'distanciaKm'
+            `, [process.env.DB_DATABASE || 'railway']);
+
+            if (distanciaKm.length === 0) {
+                await connection.execute(`ALTER TABLE Rutas ADD COLUMN distanciaKm DECIMAL(8, 3)`);
+                console.log('✅ Columna distanciaKm agregada');
+            }
+
+            // Verificar y agregar tiempoEstimadoMin
+            const [tiempoEst] = await connection.execute(`
+                SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+                WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'Rutas' AND COLUMN_NAME = 'tiempoEstimadoMin'
+            `, [process.env.DB_DATABASE || 'railway']);
+
+            if (tiempoEst.length === 0) {
+                await connection.execute(`ALTER TABLE Rutas ADD COLUMN tiempoEstimadoMin INT`);
+                console.log('✅ Columna tiempoEstimadoMin agregada');
+            }
+
+            // Verificar y agregar usoContador
+            const [usoCont] = await connection.execute(`
+                SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+                WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'Rutas' AND COLUMN_NAME = 'usoContador'
+            `, [process.env.DB_DATABASE || 'railway']);
+
+            if (usoCont.length === 0) {
+                await connection.execute(`ALTER TABLE Rutas ADD COLUMN usoContador INT DEFAULT 0`);
+                console.log('✅ Columna usoContador agregada');
+            }
+
+            // Verificar y agregar calificacionPromedio
+            const [califProm] = await connection.execute(`
+                SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+                WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'Rutas' AND COLUMN_NAME = 'calificacionPromedio'
+            `, [process.env.DB_DATABASE || 'railway']);
+
+            if (califProm.length === 0) {
+                await connection.execute(`ALTER TABLE Rutas ADD COLUMN calificacionPromedio DECIMAL(3, 2)`);
+                console.log('✅ Columna calificacionPromedio agregada');
+            }
+
+            // Verificar y agregar datosTrafico
+            const [datosTraf] = await connection.execute(`
+                SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+                WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'Rutas' AND COLUMN_NAME = 'datosTrafico'
+            `, [process.env.DB_DATABASE || 'railway']);
+
+            if (datosTraf.length === 0) {
+                await connection.execute(`ALTER TABLE Rutas ADD COLUMN datosTrafico JSON`);
+                console.log('✅ Columna datosTrafico agregada');
+            }
+
             console.log('✅ Mejoras aplicadas a tabla Rutas');
         } catch (error) {
             console.log('ℹ️  Las columnas de Rutas ya existen o hubo un problema menor');
@@ -471,14 +528,61 @@ async function initializeDatabase() {
 
         // Agregar columnas a tabla Vehiculos si no existen
         try {
-            await connection.execute(`
-                ALTER TABLE Vehiculos
-                ADD COLUMN IF NOT EXISTS latitudActual DECIMAL(10, 8),
-                ADD COLUMN IF NOT EXISTS longitudActual DECIMAL(11, 8),
-                ADD COLUMN IF NOT EXISTS ultimaUbicacion TIMESTAMP,
-                ADD COLUMN IF NOT EXISTS velocidadActual DECIMAL(5, 2),
-                ADD COLUMN IF NOT EXISTS rumboActual DECIMAL(5, 2)
-            `);
+            // Verificar y agregar latitudActual
+            const [latActual] = await connection.execute(`
+                SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+                WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'Vehiculos' AND COLUMN_NAME = 'latitudActual'
+            `, [process.env.DB_DATABASE || 'railway']);
+
+            if (latActual.length === 0) {
+                await connection.execute(`ALTER TABLE Vehiculos ADD COLUMN latitudActual DECIMAL(10, 8)`);
+                console.log('✅ Columna latitudActual agregada');
+            }
+
+            // Verificar y agregar longitudActual
+            const [lngActual] = await connection.execute(`
+                SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+                WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'Vehiculos' AND COLUMN_NAME = 'longitudActual'
+            `, [process.env.DB_DATABASE || 'railway']);
+
+            if (lngActual.length === 0) {
+                await connection.execute(`ALTER TABLE Vehiculos ADD COLUMN longitudActual DECIMAL(11, 8)`);
+                console.log('✅ Columna longitudActual agregada');
+            }
+
+            // Verificar y agregar ultimaUbicacion
+            const [ultUbic] = await connection.execute(`
+                SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+                WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'Vehiculos' AND COLUMN_NAME = 'ultimaUbicacion'
+            `, [process.env.DB_DATABASE || 'railway']);
+
+            if (ultUbic.length === 0) {
+                await connection.execute(`ALTER TABLE Vehiculos ADD COLUMN ultimaUbicacion TIMESTAMP`);
+                console.log('✅ Columna ultimaUbicacion agregada');
+            }
+
+            // Verificar y agregar velocidadActual
+            const [velActual] = await connection.execute(`
+                SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+                WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'Vehiculos' AND COLUMN_NAME = 'velocidadActual'
+            `, [process.env.DB_DATABASE || 'railway']);
+
+            if (velActual.length === 0) {
+                await connection.execute(`ALTER TABLE Vehiculos ADD COLUMN velocidadActual DECIMAL(5, 2)`);
+                console.log('✅ Columna velocidadActual agregada');
+            }
+
+            // Verificar y agregar rumboActual
+            const [rumboActual] = await connection.execute(`
+                SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+                WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'Vehiculos' AND COLUMN_NAME = 'rumboActual'
+            `, [process.env.DB_DATABASE || 'railway']);
+
+            if (rumboActual.length === 0) {
+                await connection.execute(`ALTER TABLE Vehiculos ADD COLUMN rumboActual DECIMAL(5, 2)`);
+                console.log('✅ Columna rumboActual agregada');
+            }
+
             console.log('✅ Mejoras aplicadas a tabla Vehiculos');
         } catch (error) {
             console.log('ℹ️  Las columnas de Vehiculos ya existen o hubo un problema menor');

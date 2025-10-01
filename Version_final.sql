@@ -743,19 +743,19 @@ CREATE TABLE IF NOT EXISTS auditoria_ubicaciones (
 -- =====================================================
 
 -- Mejoras a tabla Rutas
-ALTER TABLE Rutas ADD COLUMN IF NOT EXISTS coordenadasRuta JSON;
-ALTER TABLE Rutas ADD COLUMN IF NOT EXISTS distanciaKm DECIMAL(8, 3);
-ALTER TABLE Rutas ADD COLUMN IF NOT EXISTS tiempoEstimadoMin INT;
-ALTER TABLE Rutas ADD COLUMN IF NOT EXISTS usoContador INT DEFAULT 0;
-ALTER TABLE Rutas ADD COLUMN IF NOT EXISTS calificacionPromedio DECIMAL(3, 2);
-ALTER TABLE Rutas ADD COLUMN IF NOT EXISTS datosTrafico JSON;
+ALTER TABLE Rutas ADD COLUMN coordenadasRuta JSON;
+ALTER TABLE Rutas ADD COLUMN distanciaKm DECIMAL(8, 3);
+ALTER TABLE Rutas ADD COLUMN tiempoEstimadoMin INT;
+ALTER TABLE Rutas ADD COLUMN usoContador INT DEFAULT 0;
+ALTER TABLE Rutas ADD COLUMN calificacionPromedio DECIMAL(3, 2);
+ALTER TABLE Rutas ADD COLUMN datosTrafico JSON;
 
 -- Mejoras a tabla Vehiculos (para ubicación en tiempo real)
-ALTER TABLE Vehiculos ADD COLUMN IF NOT EXISTS latitudActual DECIMAL(10, 8);
-ALTER TABLE Vehiculos ADD COLUMN IF NOT EXISTS longitudActual DECIMAL(11, 8);
-ALTER TABLE Vehiculos ADD COLUMN IF NOT EXISTS ultimaUbicacion TIMESTAMP;
-ALTER TABLE Vehiculos ADD COLUMN IF NOT EXISTS velocidadActual DECIMAL(5, 2);
-ALTER TABLE Vehiculos ADD COLUMN IF NOT EXISTS rumboActual DECIMAL(5, 2);
+ALTER TABLE Vehiculos ADD COLUMN latitudActual DECIMAL(10, 8);
+ALTER TABLE Vehiculos ADD COLUMN longitudActual DECIMAL(11, 8);
+ALTER TABLE Vehiculos ADD COLUMN ultimaUbicacion TIMESTAMP;
+ALTER TABLE Vehiculos ADD COLUMN velocidadActual DECIMAL(5, 2);
+ALTER TABLE Vehiculos ADD COLUMN rumboActual DECIMAL(5, 2);
 
 
 -- =====================================================
