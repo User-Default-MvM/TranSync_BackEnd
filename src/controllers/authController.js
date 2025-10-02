@@ -187,6 +187,20 @@ const register = async (req, res) => {
 
 // LOGIN
 const login = async (req, res) => {
+    // Debug logging
+    console.log('Login attempt - Method:', req.method);
+    console.log('Login attempt - Content-Type:', req.get('Content-Type'));
+    console.log('Login attempt - Body:', req.body);
+    console.log('Login attempt - Raw body:', req.rawBody);
+
+    // Check if body exists
+    if (!req.body) {
+        console.error('Login error: req.body is undefined');
+        return res.status(400).json({
+            message: "Request body is missing. Please ensure you're sending a POST request with Content-Type: application/json"
+        });
+    }
+
     const { email, password } = req.body;
 
     if (!email || !password) {

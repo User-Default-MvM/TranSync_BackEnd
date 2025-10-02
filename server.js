@@ -102,6 +102,22 @@ const corsOptions = {
 // --- Middlewares de seguridad y rendimiento ---
 app.use(cors(corsOptions));
 
+// Middleware para capturar raw body (útil para debugging)
+app.use((req, res, next) => {
+  if (req.method === 'POST' || req.method === 'PUT') {
+    let data = '';
+    req.on('data', chunk => {
+      data += chunk;
+    });
+    req.on('end', () => {
+      req.rawBody = data;
+      next();
+    });
+  } else {
+    next();
+  }
+});
+
 // Configurar límites de payload según el entorno
 const payloadLimit = isProduction ? '5mb' : '10mb';
 app.use(express.json({ limit: payloadLimit }));
