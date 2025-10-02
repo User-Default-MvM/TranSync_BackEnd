@@ -99,64 +99,7 @@ const corsOptions = {
   maxAge: 86400 // Cache preflight por 24 horas
 };
 
-// --- Middleware personalizado para manejar JSON mal formateado ---
-let rawBodyBuffer = Buffer.alloc(0);
-
-const captureRawBody = (req, res, next) => {
-  // Solo procesar si es una solicitud POST, PUT o PATCH con Content-Type JSON
-  if (!['POST', 'PUT', 'PATCH'].includes(req.method)) {
-    return next();
-  }
-
-  if (!req.headers['content-type']?.includes('application/json')) {
-    return next();
-  }
-
-  // Capturar el raw body antes de que sea procesado
-  const chunks = [];
-
-  req.on('data', (chunk) => {
-    chunks.push(chunk);
-  });
-
-  req.on('end', () => {
-    rawBodyBuffer = Buffer.concat(chunks);
-
-    try {
-      const bodyString = rawBodyBuffer.toString('utf8');
-
-      // Caso 1: JSON envuelto en comillas simples adicionales
-      if (bodyString.startsWith("'") && bodyString.endsWith("'")) {
-        try {
-          const innerContent = bodyString.slice(1, -1);
-          const correctedBody = JSON.parse(innerContent);
-
-          console.log('🔧 JSON mal formateado corregido automáticamente');
-          console.log('   Original:', bodyString);
-          console.log('   Corregido:', JSON.stringify(correctedBody));
-
-          // Reemplazar el buffer con el JSON corregido
-          rawBodyBuffer = Buffer.from(JSON.stringify(correctedBody), 'utf8');
-        } catch (error) {
-          console.error('❌ Error corrigiendo JSON mal formateado:', error.message);
-        }
-      }
-
-      next();
-    } catch (error) {
-      console.error('❌ Error procesando raw body:', error.message);
-      next();
-    }
-  });
-
-  req.on('error', (error) => {
-    console.error('❌ Error en stream de request:', error.message);
-    next();
-  });
-};
-
-// Aplicar el middleware ANTES del parsing JSON
-app.use(captureRawBody);
+// --- Middlewares básicos ---
 
 // --- Middlewares de seguridad y rendimiento ---
 app.use(cors(corsOptions));
