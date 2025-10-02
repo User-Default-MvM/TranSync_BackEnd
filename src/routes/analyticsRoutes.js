@@ -5,7 +5,6 @@ const router = express.Router();
 const AnalyticsController = require('../controllers/analyticsController');
 const authMiddleware = require('../middleware/authMiddleware');
 const allowRoles = require('../middleware/roleMiddleware');
-const allowRoles = require('../middleware/roleMiddleware');
 
 // Aplicar autenticación a todas las rutas
 router.use(authMiddleware);

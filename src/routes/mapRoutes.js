@@ -80,16 +80,17 @@ const validateCoordinates = (req, res, next) => {
 };
 
 // 1. Buscar lugares
-router.get('/search/:query', mapController.searchPlaces);
+router.get('/search/:query', allowRoles("SUPERADMIN", "GESTOR", "CONDUCTOR"), mapController.searchPlaces);
 
 // 2. Geocoding inverso
-router.get('/reverse/:lat/:lon', validateCoordinates, mapController.reverseGeocode);
+router.get('/reverse/:lat/:lon', allowRoles("SUPERADMIN", "GESTOR", "CONDUCTOR"), validateCoordinates, mapController.reverseGeocode);
 
 // 3. Buscar lugares cercanos
-router.get('/nearby/:lat/:lon/:type', validateCoordinates, mapController.findNearbyPlaces);
+router.get('/nearby/:lat/:lon/:type', allowRoles("SUPERADMIN", "GESTOR", "CONDUCTOR"), validateCoordinates, mapController.findNearbyPlaces);
 
 // 4. Calcular ruta (con rate limiting más estricto)
-router.get('/route/:startLat/:startLon/:endLat/:endLon', 
+router.get('/route/:startLat/:startLon/:endLat/:endLon',
+  allowRoles("SUPERADMIN", "GESTOR", "CONDUCTOR"),
   routeCalculationLimit,
   (req, res, next) => {
     // Validar todas las coordenadas para el cálculo de rutas
@@ -110,7 +111,8 @@ router.get('/route/:startLat/:startLon/:endLat/:endLon',
 );
 
 // 5. Obtener detalles de lugar
-router.get('/place/:placeId', 
+router.get('/place/:placeId',
+  allowRoles("SUPERADMIN", "GESTOR", "CONDUCTOR"),
   (req, res, next) => {
     const { placeId } = req.params;
     if (!placeId || isNaN(parseInt(placeId))) {
@@ -126,7 +128,7 @@ router.get('/place/:placeId',
 );
 
 // Health check endpoint para servicios de mapas
-router.get('/health', (req, res) => {
+router.get('/health', allowRoles("SUPERADMIN", "GESTOR", "CONDUCTOR"), (req, res) => {
   res.json({
     success: true,
     message: 'Servicios de mapas funcionando correctamente',
@@ -141,7 +143,7 @@ router.get('/health', (req, res) => {
 });
 
 // Endpoint de tipos de lugares disponibles
-router.get('/types', (req, res) => {
+router.get('/types', allowRoles("SUPERADMIN", "GESTOR", "CONDUCTOR"), (req, res) => {
   const availableTypes = {
     amenities: [
       'restaurant', 'bank', 'hospital', 'school', 'pharmacy', 

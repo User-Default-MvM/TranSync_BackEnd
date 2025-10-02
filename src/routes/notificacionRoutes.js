@@ -20,7 +20,7 @@ router.use(authMiddleware);
  * @desc Obtener todas las notificaciones activas
  * @access Private
  */
-router.get('/rutas/activas', NotificacionController.obtenerNotificacionesActivas);
+router.get('/rutas/activas', allowRoles("SUPERADMIN", "GESTOR", "CONDUCTOR"), NotificacionController.obtenerNotificacionesActivas);
 
 /**
  * @route GET /api/notificaciones/rutas/:id
@@ -28,7 +28,7 @@ router.get('/rutas/activas', NotificacionController.obtenerNotificacionesActivas
  * @access Private
  * @param {number} id - ID de la ruta
  */
-router.get('/rutas/:id', NotificacionController.obtenerNotificacionesRuta);
+router.get('/rutas/:id', allowRoles("SUPERADMIN", "GESTOR", "CONDUCTOR"), NotificacionController.obtenerNotificacionesRuta);
 
 /**
  * @route POST /api/notificaciones/ruta
@@ -43,7 +43,7 @@ router.get('/rutas/:id', NotificacionController.obtenerNotificacionesRuta);
  * @body {string} tiempoInicio - Fecha/hora de inicio (opcional)
  * @body {string} tiempoFin - Fecha/hora de fin (opcional)
  */
-router.post('/ruta', NotificacionController.crearNotificacionRuta);
+router.post('/ruta', allowRoles("SUPERADMIN", "GESTOR"), NotificacionController.crearNotificacionRuta);
 
 /**
  * @route PUT /api/notificaciones/:id
@@ -58,7 +58,7 @@ router.post('/ruta', NotificacionController.crearNotificacionRuta);
  * @body {string} tiempoFin - Nueva fecha/hora de fin (opcional)
  * @body {boolean} activa - Estado activo/inactivo (opcional)
  */
-router.put('/:id', NotificacionController.actualizarNotificacion);
+router.put('/:id', allowRoles("SUPERADMIN", "GESTOR"), NotificacionController.actualizarNotificacion);
 
 /**
  * @route DELETE /api/notificaciones/:id
@@ -66,7 +66,7 @@ router.put('/:id', NotificacionController.actualizarNotificacion);
  * @access Private (Solo gestores y administradores)
  * @param {number} id - ID de la notificación
  */
-router.delete('/:id', NotificacionController.desactivarNotificacion);
+router.delete('/:id', allowRoles("SUPERADMIN", "GESTOR"), NotificacionController.desactivarNotificacion);
 
 /**
  * @route GET /api/notificaciones/tipos/:tipo
@@ -75,7 +75,7 @@ router.delete('/:id', NotificacionController.desactivarNotificacion);
  * @param {string} tipo - Tipo de notificación (TRAFICO, DEMORA, DESVIO, EMERGENCIA)
  * @query {boolean} activas - Solo notificaciones activas (opcional, default: true)
  */
-router.get('/tipos/:tipo', NotificacionController.obtenerNotificacionesPorTipo);
+router.get('/tipos/:tipo', allowRoles("SUPERADMIN", "GESTOR", "CONDUCTOR"), NotificacionController.obtenerNotificacionesPorTipo);
 
 /**
  * @route GET /api/notificaciones/prioridad/:prioridad
@@ -84,7 +84,7 @@ router.get('/tipos/:tipo', NotificacionController.obtenerNotificacionesPorTipo);
  * @param {string} prioridad - Nivel de prioridad (BAJA, NORMAL, ALTA, CRITICA)
  * @query {boolean} activas - Solo notificaciones activas (opcional, default: true)
  */
-router.get('/prioridad/:prioridad', NotificacionController.obtenerNotificacionesPorPrioridad);
+router.get('/prioridad/:prioridad', allowRoles("SUPERADMIN", "GESTOR", "CONDUCTOR"), NotificacionController.obtenerNotificacionesPorPrioridad);
 
 /**
  * @route GET /api/notificaciones/estadisticas
@@ -93,7 +93,7 @@ router.get('/prioridad/:prioridad', NotificacionController.obtenerNotificaciones
  * @query {string} fechaDesde - Fecha desde (YYYY-MM-DD) (opcional)
  * @query {string} fechaHasta - Fecha hasta (YYYY-MM-DD) (opcional)
  */
-router.get('/estadisticas', NotificacionController.obtenerEstadisticasNotificaciones);
+router.get('/estadisticas', allowRoles("SUPERADMIN", "GESTOR"), NotificacionController.obtenerEstadisticasNotificaciones);
 
 /**
  * @route GET /api/notificaciones/area
@@ -103,7 +103,7 @@ router.get('/estadisticas', NotificacionController.obtenerEstadisticasNotificaci
  * @query {number} lng - Longitud del centro del área
  * @query {number} radio - Radio en km (opcional, default: 10)
  */
-router.get('/area', NotificacionController.obtenerNotificacionesEnArea);
+router.get('/area', allowRoles("SUPERADMIN", "GESTOR", "CONDUCTOR"), NotificacionController.obtenerNotificacionesEnArea);
 
 /**
  * @route POST /api/notificaciones/emergencia
@@ -115,6 +115,6 @@ router.get('/area', NotificacionController.obtenerNotificacionesEnArea);
  * @body {string} tiempoInicio - Fecha/hora de inicio (opcional)
  * @body {string} tiempoFin - Fecha/hora de fin (opcional)
  */
-router.post('/emergencia', NotificacionController.crearNotificacionEmergencia);
+router.post('/emergencia', allowRoles("SUPERADMIN"), NotificacionController.crearNotificacionEmergencia);
 
 module.exports = router;

@@ -27,7 +27,7 @@ router.use(authMiddleware);
  * @body {string} fuenteUbicacion - Fuente de la ubicación (opcional, default: 'GPS')
  * @body {object} dispositivoInfo - Información del dispositivo (opcional)
  */
-router.post('/usuario', UbicacionController.registrarUbicacion);
+router.post('/usuario', allowRoles("SUPERADMIN", "GESTOR", "CONDUCTOR"), UbicacionController.registrarUbicacion);
 
 /**
  * @route GET /api/ubicacion/usuario/historial
@@ -37,7 +37,7 @@ router.post('/usuario', UbicacionController.registrarUbicacion);
  * @query {string} fechaDesde - Fecha desde (YYYY-MM-DD) (opcional)
  * @query {string} fechaHasta - Fecha hasta (YYYY-MM-DD) (opcional)
  */
-router.get('/usuario/historial', UbicacionController.obtenerHistorial);
+router.get('/usuario/historial', allowRoles("SUPERADMIN", "GESTOR", "CONDUCTOR"), UbicacionController.obtenerHistorial);
 
 /**
  * @route PUT /api/ubicacion/usuario
@@ -51,7 +51,7 @@ router.get('/usuario/historial', UbicacionController.obtenerHistorial);
  * @body {string} fuenteUbicacion - Nueva fuente (opcional)
  * @body {object} dispositivoInfo - Nueva información del dispositivo (opcional)
  */
-router.put('/usuario', UbicacionController.actualizarUbicacion);
+router.put('/usuario', allowRoles("SUPERADMIN", "GESTOR", "CONDUCTOR"), UbicacionController.actualizarUbicacion);
 
 /**
  * @route GET /api/rutas/cerca
@@ -61,7 +61,7 @@ router.put('/usuario', UbicacionController.actualizarUbicacion);
  * @query {number} lng - Longitud del punto de búsqueda
  * @query {number} radio - Radio de búsqueda en km (opcional, default: 5)
  */
-router.get('/rutas/cerca', UbicacionController.obtenerRutasCercanas);
+router.get('/rutas/cerca', allowRoles("SUPERADMIN", "GESTOR", "CONDUCTOR"), UbicacionController.obtenerRutasCercanas);
 
 /**
  * @route GET /api/paradas/cercanas
@@ -72,7 +72,7 @@ router.get('/rutas/cerca', UbicacionController.obtenerRutasCercanas);
  * @query {number} radio - Radio de búsqueda en km (opcional, default: 2)
  * @query {string} tipos - Tipos de puntos separados por coma (opcional, default: 'TERMINAL,ESTACION,PARADERO')
  */
-router.get('/paradas/cercanas', UbicacionController.obtenerParadasCercanas);
+router.get('/paradas/cercanas', allowRoles("SUPERADMIN", "GESTOR", "CONDUCTOR"), UbicacionController.obtenerParadasCercanas);
 
 /**
  * @route GET /api/ubicacion/info

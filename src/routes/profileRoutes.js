@@ -3,6 +3,7 @@ const express = require('express');
 const router = express.Router();
 const profileController = require('../controllers/profileController');
 const authMiddleware = require('../middleware/authMiddleware');
+const allowRoles = require('../middleware/roleMiddleware');
 const {
     validateProfileData,
     validatePasswordChange,
@@ -20,42 +21,42 @@ router.use(authMiddleware);
 
 // 1. OBTENER PERFIL DEL USUARIO
 // GET /api/user/profile
-router.get('/profile', profileController.getProfile);
+router.get('/profile', allowRoles("SUPERADMIN", "GESTOR", "CONDUCTOR"), profileController.getProfile);
 
 // 2. ACTUALIZAR PERFIL DEL USUARIO
 // PUT /api/user/profile
-router.put('/profile', validateProfileData, profileController.updateProfile);
+router.put('/profile', allowRoles("SUPERADMIN", "GESTOR", "CONDUCTOR"), validateProfileData, profileController.updateProfile);
 
 // 3. CAMBIAR CONTRASEÑA
 // PUT /api/user/change-password
-router.put('/change-password', validatePasswordChange, profileController.changePassword);
+router.put('/change-password', allowRoles("SUPERADMIN", "GESTOR", "CONDUCTOR"), validatePasswordChange, profileController.changePassword);
 
 // 4. OBTENER PREFERENCIAS DEL USUARIO
 // GET /api/user/preferences
-router.get('/preferences', profileController.getPreferences);
+router.get('/preferences', allowRoles("SUPERADMIN", "GESTOR", "CONDUCTOR"), profileController.getPreferences);
 
 // 5. ACTUALIZAR PREFERENCIAS DEL USUARIO
 // PUT /api/user/preferences
-router.put('/preferences', validatePreferences, profileController.updatePreferences);
+router.put('/preferences', allowRoles("SUPERADMIN", "GESTOR", "CONDUCTOR"), validatePreferences, profileController.updatePreferences);
 
 // 6. OBTENER CONFIGURACIÓN DE NOTIFICACIONES
 // GET /api/user/notifications/settings
-router.get('/notifications/settings', profileController.getNotificationSettings);
+router.get('/notifications/settings', allowRoles("SUPERADMIN", "GESTOR", "CONDUCTOR"), profileController.getNotificationSettings);
 
 // 7. ACTUALIZAR CONFIGURACIÓN DE NOTIFICACIONES
 // PUT /api/user/notifications/settings
-router.put('/notifications/settings', validateNotificationSettings, profileController.updateNotificationSettings);
+router.put('/notifications/settings', allowRoles("SUPERADMIN", "GESTOR", "CONDUCTOR"), validateNotificationSettings, profileController.updateNotificationSettings);
 
 // 8. OBTENER INFORMACIÓN DE LA EMPRESA
 // GET /api/user/company
-router.get('/company', profileController.getCompanyInfo);
+router.get('/company', allowRoles("SUPERADMIN", "GESTOR", "CONDUCTOR"), profileController.getCompanyInfo);
 
 // 9. OBTENER ACTIVIDAD DEL USUARIO
 // GET /api/user/activity
-router.get('/activity', validateQueryParams, profileController.getUserActivity);
+router.get('/activity', allowRoles("SUPERADMIN", "GESTOR", "CONDUCTOR"), validateQueryParams, profileController.getUserActivity);
 
 // 10. VERIFICAR ESTADO DE LA CUENTA
 // GET /api/user/account-status
-router.get('/account-status', profileController.getAccountStatus);
+router.get('/account-status', allowRoles("SUPERADMIN", "GESTOR", "CONDUCTOR"), profileController.getAccountStatus);
 
 module.exports = router;
