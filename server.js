@@ -99,6 +99,119 @@ const corsOptions = {
   maxAge: 86400 // Cache preflight por 24 horas
 };
 
+// --- Middleware personalizado para manejar JSON mal formateado ---
+const fixMalformedJSON = (req, res, next) => {
+  // Solo procesar si es una solicitud POST, PUT o PATCH con Content-Type JSON
+  if (!['POST', 'PUT', 'PATCH'].includes(req.method)) {
+    return next();
+  }
+
+  if (!req.headers['content-type']?.includes('application/json')) {
+    return next();
+  }
+
+  // Guardar el body original para logging
+  const originalBody = req.body;
+
+  try {
+    // Si el body ya es un objeto válido, continuar normalmente
+    if (typeof originalBody === 'object' && originalBody !== null) {
+      return next();
+    }
+
+    const bodyStr = JSON.stringify(originalBody);
+    let correctedBody = originalBody;
+    let wasCorrected = false;
+
+    // Caso 1: JSON envuelto en comillas simples adicionales
+    if (typeof bodyStr === 'string' &&
+        bodyStr.startsWith("'{") &&
+        bodyStr.endsWith("}'")) {
+      try {
+        const innerContent = bodyStr.slice(2, -2);
+        correctedBody = JSON.parse(innerContent);
+        wasCorrected = true;
+        console.log('🔧 Caso 1: JSON con comillas simples externas corregido');
+      } catch (error) {
+        console.error('❌ Error corrigiendo caso 1:', error.message);
+      }
+    }
+
+    // Caso 2: String JSON escapado incorrectamente
+    else if (typeof originalBody === 'string') {
+      try {
+        // Intentar parsear directamente como JSON
+        correctedBody = JSON.parse(originalBody);
+        wasCorrected = true;
+        console.log('🔧 Caso 2: String JSON parseado directamente');
+      } catch (error) {
+        // Caso 3: JSON con caracteres de escape adicionales
+        try {
+          const cleanedStr = originalBody.replace(/\\+/g, '');
+          correctedBody = JSON.parse(cleanedStr);
+          wasCorrected = true;
+          console.log('🔧 Caso 3: Caracteres de escape adicionales removidos');
+        } catch (error2) {
+          console.error('❌ Error corrigiendo casos 2 y 3:', error2.message);
+        }
+      }
+    }
+
+    // Caso 4: JSON con propiedades mal formateadas (comillas simples en lugar de dobles)
+    else if (typeof originalBody === 'object') {
+      try {
+        const correctedObj = {};
+        for (const [key, value] of Object.entries(originalBody)) {
+          // Si la clave tiene comillas simples, intentar corregir
+          let correctedKey = key;
+          if (typeof key === 'string' && key.match(/^'.*'$/)) {
+            correctedKey = key.slice(1, -1);
+          }
+
+          // Si el valor es un string con comillas simples alrededor de JSON
+          let correctedValue = value;
+          if (typeof value === 'string' && value.match(/^'.*'.*'.*'$/)) {
+            try {
+              correctedValue = JSON.parse(value.slice(1, -1));
+            } catch {
+              correctedValue = value;
+            }
+          }
+
+          correctedObj[correctedKey] = correctedValue;
+        }
+
+        // Verificar si la corrección cambió algo
+        const originalStr = JSON.stringify(originalBody);
+        const correctedStr = JSON.stringify(correctedObj);
+
+        if (originalStr !== correctedStr) {
+          correctedBody = correctedObj;
+          wasCorrected = true;
+          console.log('🔧 Caso 4: Propiedades con formato incorrecto corregidas');
+        }
+      } catch (error) {
+        console.error('❌ Error corrigiendo caso 4:', error.message);
+      }
+    }
+
+    if (wasCorrected) {
+      console.log('📝 JSON mal formateado corregido automáticamente:');
+      console.log('   Original:', bodyStr);
+      console.log('   Corregido:', JSON.stringify(correctedBody));
+      req.body = correctedBody;
+    }
+
+  } catch (error) {
+    console.error('❌ Error general en middleware de corrección JSON:', error.message);
+  }
+
+  next();
+};
+
+// Aplicar el middleware antes del parsing JSON
+app.use(fixMalformedJSON);
+
 // --- Middlewares de seguridad y rendimiento ---
 app.use(cors(corsOptions));
 
