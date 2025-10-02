@@ -60,6 +60,7 @@ const corsOptions = {
       'http://localhost:19006',       // Expo web
       'exp://192.168.1.100:19000',    // Expo tunnel
       'http://127.0.0.1:3000',        // Web app alternativa
+      'http://localhost:3001',         // Web app alternativa en puerto 3001
       'https://transync.com',         // Dominio producción
       'https://www.transync.com',     // Dominio producción con www
       'https://api.transync.com',     // API en producción
