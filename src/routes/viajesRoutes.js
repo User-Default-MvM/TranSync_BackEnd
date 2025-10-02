@@ -331,6 +331,69 @@ router.delete("/:id", allowRoles("SUPERADMIN", "GESTOR"), async (req, res) => {
   }
 });
 
+// Limpiar viajes duplicados (solo SUPERADMIN y GESTOR)
+router.post("/limpiar-duplicados", allowRoles("SUPERADMIN", "GESTOR"), async (req, res) => {
+  try {
+    console.log("📌 Ejecutando limpieza de viajes duplicados");
+
+    const result = await pool.query(`
+      DELETE v1 FROM Viajes v1
+      INNER JOIN Viajes v2
+      WHERE v1.idViaje > v2.idViaje
+      AND v1.idVehiculo = v2.idVehiculo
+      AND v1.idConductor = v2.idConductor
+      AND v1.idRuta = v2.idRuta
+      AND DATE(v1.fecHorSalViaje) = DATE(v2.fecHorSalViaje)
+      AND HOUR(v1.fecHorSalViaje) = HOUR(v2.fecHorSalViaje)
+      AND MINUTE(v1.fecHorSalViaje) = MINUTE(v2.fecHorSalViaje)
+    `);
+
+    console.log(`✅ ${result[0].affectedRows} viajes duplicados eliminados`);
+    res.json({
+      message: 'Limpieza completada exitosamente',
+      viajesEliminados: result[0].affectedRows
+    });
+
+  } catch (error) {
+    console.error("❌ Error limpiando duplicados:", error);
+    res.status(500).json({ message: "Error en el servidor", error: error.message });
+  }
+});
+
+// Obtener viajes sin duplicados (CONDUCTOR puede consultar horarios)
+router.get("/sin-duplicados", allowRoles("SUPERADMIN", "GESTOR", "CONDUCTOR"), async (req, res) => {
+  try {
+    console.log("📌 Obteniendo viajes sin duplicados");
+
+    const [rows] = await pool.query(`
+      SELECT DISTINCT
+        v.idViaje, v.fecHorSalViaje, v.fecHorLleViaje, v.estViaje, v.obsViaje,
+        veh.plaVehiculo,
+        veh.marVehiculo,
+        veh.modVehiculo,
+        veh.numVehiculo,
+        u.nomUsuario as nomConductor,
+        u.apeUsuario as apeConductor,
+        u.numDocUsuario as numDocConductor,
+        r.nomRuta,
+        r.oriRuta,
+        r.desRuta
+      FROM Viajes v
+      LEFT JOIN Vehiculos veh ON v.idVehiculo = veh.idVehiculo
+      LEFT JOIN Conductores c ON v.idConductor = c.idConductor
+      LEFT JOIN Usuarios u ON c.idUsuario = u.idUsuario
+      LEFT JOIN Rutas r ON v.idRuta = r.idRuta
+      GROUP BY v.idVehiculo, v.idConductor, v.idRuta, DATE(v.fecHorSalViaje), HOUR(v.fecHorSalViaje), MINUTE(v.fecHorSalViaje)
+      ORDER BY v.fecHorSalViaje DESC
+    `);
+
+    res.json(rows);
+  } catch (error) {
+    console.error("❌ Error obteniendo viajes sin duplicados:", error);
+    res.status(500).json({ message: "Error en el servidor", error: error.message });
+  }
+});
+
 // Cambiar estado de un viaje (solo SUPERADMIN y GESTOR)
 router.patch("/:id/estado", allowRoles("SUPERADMIN", "GESTOR"), async (req, res) => {
   try {

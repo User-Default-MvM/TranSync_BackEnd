@@ -112,8 +112,18 @@ CREATE TABLE IF NOT EXISTS Conductores (
     fecCreConductor TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     -- Fecha de última modificación.
     fecUltModConductor TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    -- Índices para mejorar rendimiento
+    INDEX idx_conductores_empresa (idEmpresa),
+    INDEX idx_conductores_estado (estConductor),
+    INDEX idx_conductores_licencia (fecVenLicConductor),
+    INDEX idx_conductores_usuario (idUsuario),
+    INDEX idx_conductores_empresa_estado (idEmpresa, estConductor),
+    INDEX idx_conductores_licencia_proxima_vencer (fecVenLicConductor, estConductor),
+
     -- Unicidad Conductores.
     UNIQUE(idEmpresa, idUsuario),
+
     -- Llave foránea: Si se borra la empresa, se borran sus conductores.
     CONSTRAINT Fk_Conductores_Empresas FOREIGN KEY (idEmpresa) REFERENCES Empresas(idEmpresa) ON DELETE CASCADE,
     -- Llave foránea: Si se borra el usuario, el conductor no se borra, solo se desvincula (SET NULL).
@@ -151,8 +161,21 @@ CREATE TABLE IF NOT EXISTS Vehiculos (
     fecCreVehiculo TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     -- Fecha de última modificación.
     fecUltModVehiculo TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    -- Índices para mejorar rendimiento
+    INDEX idx_vehiculos_empresa (idEmpresa),
+    INDEX idx_vehiculos_estado (estVehiculo),
+    INDEX idx_vehiculos_placa (plaVehiculo),
+    INDEX idx_vehiculos_soat (fecVenSOAT),
+    INDEX idx_vehiculos_tecnico (fecVenTec),
+    INDEX idx_vehiculos_conductor (idConductorAsignado),
+    INDEX idx_vehiculos_empresa_estado (idEmpresa, estVehiculo),
+    INDEX idx_vehiculos_disponibles (estVehiculo, fecVenSOAT, fecVenTec),
+    INDEX idx_vehiculos_documentos_vencidos (fecVenSOAT, fecVenTec, estVehiculo),
+
     -- Restricción de unicidad para el número interno por empresa.
     UNIQUE(idEmpresa, numVehiculo),
+
     -- Llave foránea: Si se borra la empresa, se borran sus vehículos.
     CONSTRAINT Fk_Vehiculos_Empresas FOREIGN KEY (idEmpresa) REFERENCES Empresas(idEmpresa) ON DELETE CASCADE,
     -- Llave foránea: Si se borra el conductor, el vehículo queda sin conductor asignado.
@@ -174,8 +197,19 @@ CREATE TABLE IF NOT EXISTS Rutas (
     desRuta VARCHAR(100) NOT NULL,
     -- Empresa que opera la ruta.
     idEmpresa INT NOT NULL,
+    -- Fecha de creación de la ruta (auditoría)
+    fecCreRuta TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    -- Fecha de última modificación (auditoría)
+    fecUltModRuta TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    -- Índices para mejorar rendimiento
+    INDEX idx_rutas_empresa (idEmpresa),
+    INDEX idx_rutas_nombre (nomRuta),
+    INDEX idx_rutas_origen_destino (oriRuta, desRuta),
+
     -- Restricción de unicidad para el nombre de la ruta por empresa.
     UNIQUE(idEmpresa, nomRuta),
+
     -- Llave foránea: Si se borra la empresa, se borran sus rutas.
     CONSTRAINT Fk_Rutas_Empresas FOREIGN KEY (idEmpresa) REFERENCES Empresas(idEmpresa) ON DELETE CASCADE
 );
@@ -201,6 +235,24 @@ CREATE TABLE IF NOT EXISTS Viajes (
     estViaje ENUM('PROGRAMADO', 'EN_CURSO', 'FINALIZADO', 'CANCELADO') NOT NULL DEFAULT 'PROGRAMADO',
     -- Observaciones o novedades.
     obsViaje TEXT,
+    -- Fecha de creación del viaje (auditoría)
+    fecCreViaje TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    -- Fecha de última modificación (auditoría)
+    fecUltModViaje TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    -- Restricción de unicidad compuesta para prevenir duplicados
+    UNIQUE KEY unique_viaje_programado (idVehiculo, idConductor, idRuta, fecHorSalViaje),
+
+    -- Índices para mejorar rendimiento de consultas frecuentes
+    INDEX idx_viajes_fecha_salida (fecHorSalViaje),
+    INDEX idx_viajes_fecha_llegada (fecHorLleViaje),
+    INDEX idx_viajes_estado (estViaje),
+    INDEX idx_viajes_estado_fecha (estViaje, fecHorSalViaje),
+    INDEX idx_viajes_vehiculo_fecha (idVehiculo, fecHorSalViaje),
+    INDEX idx_viajes_conductor_fecha (idConductor, fecHorSalViaje),
+    INDEX idx_viajes_ruta_fecha (idRuta, fecHorSalViaje),
+    INDEX idx_viajes_compuesto (idVehiculo, idConductor, idRuta, estViaje),
+
     -- Llave foránea hacia Vehiculos.
     CONSTRAINT Fk_Viajes_Vehiculos FOREIGN KEY (idVehiculo) REFERENCES Vehiculos(idVehiculo),
     -- Llave foránea hacia Conductores.
@@ -658,6 +710,15 @@ CREATE TABLE IF NOT EXISTS ubicaciones_usuario (
     fechaHora TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     fuenteUbicacion VARCHAR(20) DEFAULT 'GPS',
     dispositivoInfo JSON,
+
+    -- Índices críticos para geolocalización y rendimiento
+    INDEX idx_ubicaciones_usuario_fecha (fechaHora),
+    INDEX idx_ubicaciones_usuario_usuario_fecha (idUsuario, fechaHora DESC),
+    INDEX idx_ubicaciones_usuario_coordenadas (latitud, longitud),
+    INDEX idx_ubicaciones_usuario_usuario_tiempo (idUsuario, fechaHora, velocidadKmh),
+    INDEX idx_ubicaciones_usuario_recientes (fechaHora, fuenteUbicacion),
+
+    -- Llave foránea
     FOREIGN KEY (idUsuario) REFERENCES Usuarios(idUsuario) ON DELETE CASCADE
 );
 
@@ -678,6 +739,16 @@ CREATE TABLE IF NOT EXISTS puntos_interes (
     sitioWeb VARCHAR(255),
     idRutaAsociada INT,
     datosAdicionales JSON,
+
+    -- Índices para búsquedas geográficas y rendimiento
+    INDEX idx_puntos_interes_tipo_ubicacion (tipoPoi, latitud, longitud),
+    INDEX idx_puntos_interes_ruta (idRutaAsociada),
+    INDEX idx_puntos_interes_coordenadas (latitud, longitud),
+    INDEX idx_puntos_interes_nombre (nombrePoi),
+    INDEX idx_puntos_interes_tipo (tipoPoi),
+    INDEX idx_puntos_interes_ruta_tipo (idRutaAsociada, tipoPoi),
+
+    -- Llave foránea
     FOREIGN KEY (idRutaAsociada) REFERENCES Rutas(idRuta) ON DELETE CASCADE
 );
 

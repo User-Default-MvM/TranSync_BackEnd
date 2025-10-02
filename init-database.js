@@ -3,9 +3,19 @@ const fs = require('fs');
 const path = require('path');
 require('dotenv').config();
 
+/**
+ * Inicializador de base de datos para despliegue en Railway
+ *
+ * NOTA: La mayoría de las mejoras de estructura, índices y optimizaciones
+ * están centralizadas en Version_final.sql. Este archivo solo se encarga de:
+ * - Crear tablas que no están en Version_final.sql (PasswordResets)
+ * - Verificar y crear tablas de dashboard faltantes
+ * - Agregar columnas Waze-style faltantes a tablas existentes
+ * - Crear índices adicionales críticos
+ */
 async function initializeDatabase() {
     let connection;
-    
+
     try {
         console.log('🔄 Conectando a la base de datos...');
         
@@ -21,9 +31,9 @@ async function initializeDatabase() {
 
         console.log('✅ Conexión establecida');
 
-        // Leer el archivo SQL
+        // Leer el archivo SQL (contiene todas las mejoras principales de estructura e índices)
         const sqlPath = path.join(__dirname, 'Version_final.sql');
-        console.log('📖 Leyendo script SQL...');
+        console.log('📖 Leyendo script SQL con mejoras optimizadas...');
         
         if (!fs.existsSync(sqlPath)) {
             throw new Error(`Archivo SQL no encontrado: ${sqlPath}`);
@@ -161,7 +171,7 @@ async function initializeDatabase() {
             console.log('⚠️  Usuarios iniciales ya existen, omitiendo inserción');
         }
 
-        // Verificar y crear tabla PasswordResets si no existe
+        // Verificar y crear tabla PasswordResets si no existe (no incluida en Version_final.sql)
         console.log('🔍 Verificando tabla PasswordResets...');
         const [passwordResetTables] = await connection.execute(`
             SELECT TABLE_NAME
@@ -202,7 +212,7 @@ async function initializeDatabase() {
             console.log(`🧹 Eliminados ${result.affectedRows} tokens expirados o usados`);
         }
 
-        // Verificar y crear tablas faltantes para dashboard
+        // Verificar y crear tablas faltantes para dashboard (no incluídas en Version_final.sql)
         console.log('🔍 Verificando tablas de dashboard...');
 
         // Crear tabla ResumenOperacional si no existe
@@ -302,6 +312,8 @@ async function initializeDatabase() {
                     INDEX idx_ubicaciones_usuario_fecha (fechaHora),
                     INDEX idx_ubicaciones_usuario_usuario_fecha (idUsuario, fechaHora DESC),
                     INDEX idx_ubicaciones_usuario_coordenadas (latitud, longitud),
+                    INDEX idx_ubicaciones_usuario_usuario_tiempo (idUsuario, fechaHora, velocidadKmh),
+                    INDEX idx_ubicaciones_usuario_recientes (fechaHora, fuenteUbicacion),
                     FOREIGN KEY (idUsuario) REFERENCES Usuarios(idUsuario) ON DELETE CASCADE
                 )
             `);
@@ -338,6 +350,9 @@ async function initializeDatabase() {
                     INDEX idx_puntos_interes_tipo_ubicacion (tipoPoi, latitud, longitud),
                     INDEX idx_puntos_interes_ruta (idRutaAsociada),
                     INDEX idx_puntos_interes_coordenadas (latitud, longitud),
+                    INDEX idx_puntos_interes_nombre (nombrePoi),
+                    INDEX idx_puntos_interes_tipo (tipoPoi),
+                    INDEX idx_puntos_interes_ruta_tipo (idRutaAsociada, tipoPoi),
                     FOREIGN KEY (idRutaAsociada) REFERENCES Rutas(idRuta) ON DELETE CASCADE
                 )
             `);
@@ -591,24 +606,23 @@ async function initializeDatabase() {
             console.log('ℹ️  Las columnas de Vehiculos ya existen o hubo un problema menor');
         }
 
-        // Crear índices adicionales si no existen (solo si las columnas existen)
+        // Crear índices adicionales críticos si no existen
         try {
-            // Verificar si las columnas existen antes de crear índices
-            const [rutasColumns] = await connection.execute(`
-                SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
-                WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'Rutas' AND COLUMN_NAME = 'estRuta'
-            `, [process.env.DB_DATABASE || 'railway']);
-
-            if (rutasColumns.length > 0) {
-                await connection.execute(`
-                    CREATE INDEX IF NOT EXISTS idx_rutas_estado_ubicacion ON Rutas(estRuta, coordenadasRuta);
-                `);
-            }
+            // Índices adicionales para tablas existentes mejorados
+            await connection.execute(`
+                CREATE INDEX IF NOT EXISTS idx_rutas_estado_ubicacion ON Rutas(estRuta, coordenadasRuta);
+            `);
 
             await connection.execute(`
                 CREATE INDEX IF NOT EXISTS idx_vehiculos_estado_ubicacion ON Vehiculos(estVehiculo, latitudActual, longitudActual);
             `);
-            console.log('✅ Índices adicionales creados');
+
+            // Índices adicionales para mejorar rendimiento de viajes
+            await connection.execute(`
+                CREATE INDEX IF NOT EXISTS idx_viajes_unicidad ON Viajes(idVehiculo, idConductor, idRuta, fecHorSalViaje);
+            `);
+
+            console.log('✅ Índices adicionales críticos creados');
         } catch (error) {
             console.log('ℹ️  Los índices adicionales ya existen o hubo un problema menor');
         }

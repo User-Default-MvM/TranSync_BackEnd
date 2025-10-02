@@ -45,3 +45,24 @@ exports.deleteViaje = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+exports.limpiarDuplicados = async (req, res) => {
+  try {
+    const result = await Viajes.limpiarDuplicados();
+    res.json({
+      message: 'Proceso de limpieza completado',
+      viajesEliminados: result.eliminados
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getViajesSinDuplicados = async (req, res) => {
+  try {
+    const viajes = await Viajes.getAllSinDuplicados();
+    res.json(viajes);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
