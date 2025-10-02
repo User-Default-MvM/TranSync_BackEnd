@@ -102,20 +102,10 @@ const corsOptions = {
 // --- Middlewares de seguridad y rendimiento ---
 app.use(cors(corsOptions));
 
-// Middleware para capturar raw body (útil para debugging)
+// Middleware para logging básico (sin consumir el stream)
 app.use((req, res, next) => {
-  if (req.method === 'POST' || req.method === 'PUT') {
-    let data = '';
-    req.on('data', chunk => {
-      data += chunk;
-    });
-    req.on('end', () => {
-      req.rawBody = data;
-      next();
-    });
-  } else {
-    next();
-  }
+  // Solo agregar headers de seguridad adicionales si es necesario
+  next();
 });
 
 // Configurar límites de payload según el entorno

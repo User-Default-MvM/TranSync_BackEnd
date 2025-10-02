@@ -191,7 +191,6 @@ const login = async (req, res) => {
     console.log('Login attempt - Method:', req.method);
     console.log('Login attempt - Content-Type:', req.get('Content-Type'));
     console.log('Login attempt - Body:', req.body);
-    console.log('Login attempt - Raw body:', req.rawBody);
 
     // Check if body exists
     if (!req.body) {
