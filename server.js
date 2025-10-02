@@ -99,6 +99,65 @@ const corsOptions = {
   maxAge: 86400 // Cache preflight por 24 horas
 };
 
+// --- Middleware personalizado para manejar JSON mal formateado ---
+let rawBodyBuffer = Buffer.alloc(0);
+
+const captureRawBody = (req, res, next) => {
+  // Solo procesar si es una solicitud POST, PUT o PATCH con Content-Type JSON
+  if (!['POST', 'PUT', 'PATCH'].includes(req.method)) {
+    return next();
+  }
+
+  if (!req.headers['content-type']?.includes('application/json')) {
+    return next();
+  }
+
+  // Capturar el raw body antes de que sea procesado
+  const chunks = [];
+
+  req.on('data', (chunk) => {
+    chunks.push(chunk);
+  });
+
+  req.on('end', () => {
+    rawBodyBuffer = Buffer.concat(chunks);
+
+    try {
+      const bodyString = rawBodyBuffer.toString('utf8');
+
+      // Caso 1: JSON envuelto en comillas simples adicionales
+      if (bodyString.startsWith("'") && bodyString.endsWith("'")) {
+        try {
+          const innerContent = bodyString.slice(1, -1);
+          const correctedBody = JSON.parse(innerContent);
+
+          console.log('🔧 JSON mal formateado corregido automáticamente');
+          console.log('   Original:', bodyString);
+          console.log('   Corregido:', JSON.stringify(correctedBody));
+
+          // Reemplazar el buffer con el JSON corregido
+          rawBodyBuffer = Buffer.from(JSON.stringify(correctedBody), 'utf8');
+        } catch (error) {
+          console.error('❌ Error corrigiendo JSON mal formateado:', error.message);
+        }
+      }
+
+      next();
+    } catch (error) {
+      console.error('❌ Error procesando raw body:', error.message);
+      next();
+    }
+  });
+
+  req.on('error', (error) => {
+    console.error('❌ Error en stream de request:', error.message);
+    next();
+  });
+};
+
+// Aplicar el middleware ANTES del parsing JSON
+app.use(captureRawBody);
+
 // --- Middlewares de seguridad y rendimiento ---
 app.use(cors(corsOptions));
 
@@ -322,14 +381,60 @@ app.use((req, res) => {
 
 // --- Manejo de errores del servidor ---
 app.use((error, req, res, next) => {
+    // Manejar específicamente errores de parsing JSON mal formateado
+    if (error instanceof SyntaxError &&
+        error.message.includes('Unexpected token') &&
+        error.type === 'entity.parse.failed') {
+
+        console.log('🚨 Error de parsing JSON detectado, intentando corrección...');
+        console.log('   Body recibido:', error.body);
+
+        try {
+            // Intentar corregir el JSON mal formateado
+            const malformedBody = error.body;
+
+            if (typeof malformedBody === 'string' &&
+                malformedBody.startsWith("'") &&
+                malformedBody.endsWith("'")) {
+
+                const innerContent = malformedBody.slice(1, -1);
+                const correctedBody = JSON.parse(innerContent);
+
+                console.log('✅ JSON corregido en manejo de errores');
+                console.log('   Corregido:', JSON.stringify(correctedBody));
+
+                // Aquí podrías redirigir la solicitud con el body corregido
+                // Por simplicidad, devolveremos una respuesta indicando el problema
+                return res.status(400).json({
+                    status: 'ERROR',
+                    message: 'Formato JSON inválido. El JSON debe estar entre llaves dobles, no comillas simples.',
+                    ejemplo: '{ "email": "test@example.com", "password": "test123" }',
+                    recibido: malformedBody,
+                    timestamp: new Date().toISOString()
+                });
+            }
+        } catch (correctionError) {
+            console.error('❌ No se pudo corregir el JSON:', correctionError.message);
+        }
+
+        // Si no se pudo corregir, devolver error estándar
+        return res.status(400).json({
+            status: 'ERROR',
+            message: 'JSON mal formateado. Asegúrate de usar comillas dobles.',
+            ejemplo: '{ "email": "test@example.com", "password": "test123" }',
+            error: error.message,
+            timestamp: new Date().toISOString()
+        });
+    }
+
     console.error('Error del servidor:', error);
     res.status(500).json({
         status: 'ERROR',
         message: 'Error interno del servidor',
         timestamp: new Date().toISOString(),
-        ...(process.env.NODE_ENV === 'development' && { 
+        ...(process.env.NODE_ENV === 'development' && {
             error: error.message,
-            stack: error.stack 
+            stack: error.stack
         })
     });
 });
