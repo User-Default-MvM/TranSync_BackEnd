@@ -4,6 +4,7 @@ const express = require('express');
 const router = express.Router();
 const UbicacionController = require('../controllers/ubicacionController');
 const authMiddleware = require('../middleware/authMiddleware');
+const allowRoles = require('../middleware/roleMiddleware');
 
 /**
  * Rutas para gestión avanzada de ubicación y geolocalización
@@ -11,6 +12,8 @@ const authMiddleware = require('../middleware/authMiddleware');
 
 // Todas las rutas requieren autenticación
 router.use(authMiddleware);
+
+// Aplicar permisos específicos para ubicación (CONDUCTOR necesita acceso para navegación)
 
 /**
  * @route POST /api/ubicacion/usuario

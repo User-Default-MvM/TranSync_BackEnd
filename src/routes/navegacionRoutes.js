@@ -4,6 +4,7 @@ const express = require('express');
 const router = express.Router();
 const NavegacionController = require('../controllers/navegacionController');
 const authMiddleware = require('../middleware/authMiddleware');
+const allowRoles = require('../middleware/roleMiddleware');
 
 /**
  * Rutas para sistema avanzado de navegación y rutas estilo Waze

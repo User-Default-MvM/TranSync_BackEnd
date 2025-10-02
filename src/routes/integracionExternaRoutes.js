@@ -4,6 +4,7 @@ const express = require('express');
 const router = express.Router();
 const IntegracionExternaController = require('../controllers/integracionExternaController');
 const authMiddleware = require('../middleware/authMiddleware');
+const allowRoles = require('../middleware/roleMiddleware');
 
 /**
  * Rutas para integración con servicios externos
@@ -11,6 +12,8 @@ const authMiddleware = require('../middleware/authMiddleware');
 
 // Todas las rutas requieren autenticación
 router.use(authMiddleware);
+
+// Aplicar permisos específicos para integración externa (CONDUCTOR necesita acceso para navegación)
 
 /**
  * @route GET /api/integracion/geocoding

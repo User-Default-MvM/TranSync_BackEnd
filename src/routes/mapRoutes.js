@@ -3,6 +3,7 @@ const express = require('express');
 const router = express.Router();
 const mapController = require('../controllers/mapController');
 const authMiddleware = require('../middleware/authMiddleware');
+const allowRoles = require('../middleware/roleMiddleware');
 
 // Intentar cargar express-rate-limit, pero manejar el error si no está instalado
 let rateLimit;
@@ -47,6 +48,8 @@ const routeCalculationLimit = rateLimit({
 
 // Aplicar middleware de autenticación a todas las rutas de mapas
 router.use(authMiddleware);
+
+// Aplicar permisos específicos para mapas (CONDUCTOR necesita acceso para navegación)
 
 // Aplicar rate limiting general a todas las rutas
 router.use(mapRateLimit);

@@ -4,6 +4,11 @@ const express = require('express');
 const router = express.Router();
 const AnalyticsController = require('../controllers/analyticsController');
 const authMiddleware = require('../middleware/authMiddleware');
+const allowRoles = require('../middleware/roleMiddleware');
+const allowRoles = require('../middleware/roleMiddleware');
+
+// Aplicar autenticación a todas las rutas
+router.use(authMiddleware);
 
 /**
  * Rutas para analytics y métricas avanzadas
@@ -20,7 +25,7 @@ router.use(authMiddleware);
  * @query {string} fechaHasta - Fecha hasta (YYYY-MM-DD) (opcional)
  * @query {number} limite - Límite de resultados (opcional, default: 10)
  */
-router.get('/rutas/populares', AnalyticsController.obtenerRutasPopulares);
+router.get('/rutas/populares', allowRoles("SUPERADMIN", "GESTOR"), AnalyticsController.obtenerRutasPopulares);
 
 /**
  * @route GET /api/analytics/rutas/rendimiento
@@ -29,7 +34,7 @@ router.get('/rutas/populares', AnalyticsController.obtenerRutasPopulares);
  * @query {string} fechaDesde - Fecha desde (YYYY-MM-DD) (opcional)
  * @query {string} fechaHasta - Fecha hasta (YYYY-MM-DD) (opcional)
  */
-router.get('/rutas/rendimiento', AnalyticsController.obtenerRendimientoRutas);
+router.get('/rutas/rendimiento', allowRoles("SUPERADMIN", "GESTOR"), AnalyticsController.obtenerRendimientoRutas);
 
 /**
  * @route GET /api/analytics/usuarios/patrones
@@ -38,7 +43,7 @@ router.get('/rutas/rendimiento', AnalyticsController.obtenerRendimientoRutas);
  * @query {string} fechaDesde - Fecha desde (YYYY-MM-DD) (opcional)
  * @query {string} fechaHasta - Fecha hasta (YYYY-MM-DD) (opcional)
  */
-router.get('/usuarios/patrones', AnalyticsController.obtenerPatronesUsuario);
+router.get('/usuarios/patrones', allowRoles("SUPERADMIN", "GESTOR"), AnalyticsController.obtenerPatronesUsuario);
 
 /**
  * @route GET /api/analytics/usuarios/:id/metricas
@@ -48,7 +53,7 @@ router.get('/usuarios/patrones', AnalyticsController.obtenerPatronesUsuario);
  * @query {string} fechaDesde - Fecha desde (YYYY-MM-DD) (opcional)
  * @query {string} fechaHasta - Fecha hasta (YYYY-MM-DD) (opcional)
  */
-router.get('/usuarios/:id/metricas', AnalyticsController.obtenerMetricasUsuario);
+router.get('/usuarios/:id/metricas', allowRoles("SUPERADMIN", "GESTOR", "CONDUCTOR"), AnalyticsController.obtenerMetricasUsuario);
 
 /**
  * @route GET /api/analytics/periodo
@@ -58,7 +63,7 @@ router.get('/usuarios/:id/metricas', AnalyticsController.obtenerMetricasUsuario)
  * @query {string} fechaDesde - Fecha desde (YYYY-MM-DD) (opcional)
  * @query {string} fechaHasta - Fecha hasta (YYYY-MM-DD) (opcional)
  */
-router.get('/periodo', AnalyticsController.obtenerEstadisticasPorPeriodo);
+router.get('/periodo', allowRoles("SUPERADMIN", "GESTOR"), AnalyticsController.obtenerEstadisticasPorPeriodo);
 
 /**
  * @route GET /api/analytics/congestion
@@ -67,7 +72,7 @@ router.get('/periodo', AnalyticsController.obtenerEstadisticasPorPeriodo);
  * @query {string} fechaDesde - Fecha desde (YYYY-MM-DD) (opcional)
  * @query {string} fechaHasta - Fecha hasta (YYYY-MM-DD) (opcional)
  */
-router.get('/congestion', AnalyticsController.obtenerPuntosCongestion);
+router.get('/congestion', allowRoles("SUPERADMIN", "GESTOR", "CONDUCTOR"), AnalyticsController.obtenerPuntosCongestion);
 
 /**
  * @route GET /api/analytics/calificaciones
@@ -76,7 +81,7 @@ router.get('/congestion', AnalyticsController.obtenerPuntosCongestion);
  * @query {string} fechaDesde - Fecha desde (YYYY-MM-DD) (opcional)
  * @query {string} fechaHasta - Fecha hasta (YYYY-MM-DD) (opcional)
  */
-router.get('/calificaciones', AnalyticsController.obtenerAnalisisCalificaciones);
+router.get('/calificaciones', allowRoles("SUPERADMIN", "GESTOR"), AnalyticsController.obtenerAnalisisCalificaciones);
 
 /**
  * @route POST /api/analytics/viaje
@@ -91,7 +96,7 @@ router.get('/calificaciones', AnalyticsController.obtenerAnalisisCalificaciones)
  * @body {number} calificacionViaje - Calificación del viaje (1-5) (opcional)
  * @body {string} comentarios - Comentarios del usuario (opcional)
  */
-router.post('/viaje', AnalyticsController.registrarViaje);
+router.post('/viaje', allowRoles("SUPERADMIN", "GESTOR", "CONDUCTOR"), AnalyticsController.registrarViaje);
 
 /**
  * @route GET /api/analytics/dashboard
@@ -100,7 +105,7 @@ router.post('/viaje', AnalyticsController.registrarViaje);
  * @query {string} fechaDesde - Fecha desde (YYYY-MM-DD) (opcional)
  * @query {string} fechaHasta - Fecha hasta (YYYY-MM-DD) (opcional)
  */
-router.get('/dashboard', AnalyticsController.obtenerDatosDashboard);
+router.get('/dashboard', allowRoles("SUPERADMIN", "GESTOR"), AnalyticsController.obtenerDatosDashboard);
 
 /**
  * @route GET /api/analytics/exportar
@@ -111,7 +116,7 @@ router.get('/dashboard', AnalyticsController.obtenerDatosDashboard);
  * @query {string} fechaDesde - Fecha desde (YYYY-MM-DD) (opcional)
  * @query {string} fechaHasta - Fecha hasta (YYYY-MM-DD) (opcional)
  */
-router.get('/exportar', AnalyticsController.exportarDatos);
+router.get('/exportar', allowRoles("SUPERADMIN", "GESTOR"), AnalyticsController.exportarDatos);
 
 /**
  * @route GET /api/analytics/usuarios/activos
@@ -121,6 +126,6 @@ router.get('/exportar', AnalyticsController.exportarDatos);
  * @query {string} fechaHasta - Fecha hasta (YYYY-MM-DD) (opcional)
  * @query {number} limite - Límite de resultados (opcional, default: 10)
  */
-router.get('/usuarios/activos', AnalyticsController.obtenerUsuariosActivos);
+router.get('/usuarios/activos', allowRoles("SUPERADMIN", "GESTOR"), AnalyticsController.obtenerUsuariosActivos);
 
 module.exports = router;

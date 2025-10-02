@@ -4,6 +4,7 @@ const express = require('express');
 const router = express.Router();
 const NotificacionController = require('../controllers/notificacionController');
 const authMiddleware = require('../middleware/authMiddleware');
+const allowRoles = require('../middleware/roleMiddleware');
 
 /**
  * Rutas para sistema de notificaciones en tiempo real
@@ -11,6 +12,8 @@ const authMiddleware = require('../middleware/authMiddleware');
 
 // Todas las rutas requieren autenticación
 router.use(authMiddleware);
+
+// Aplicar permisos específicos para notificaciones (CONDUCTOR puede consultar notificaciones que le afecten)
 
 /**
  * @route GET /api/notificaciones/rutas/activas
