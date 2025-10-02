@@ -1,9 +1,14 @@
 const express = require("express");
 const router = express.Router();
 const pool = require("../config/db");
+const authMiddleware = require("../middleware/authMiddleware");
+const allowRoles = require("../middleware/roleMiddleware");
 
-// Obtener todos los viajes con información relacionada
-router.get("/", async (req, res) => {
+// Aplicar autenticación a todas las rutas
+router.use(authMiddleware);
+
+// Obtener todos los viajes con información relacionada (CONDUCTOR puede consultar horarios)
+router.get("/", allowRoles("SUPERADMIN", "GESTOR", "CONDUCTOR"), async (req, res) => {
   try {
     console.log("📌 Entrando a GET /api/viajes");
     
@@ -36,8 +41,8 @@ router.get("/", async (req, res) => {
   }
 });
 
-// Obtener un viaje específico
-router.get("/:id", async (req, res) => {
+// Obtener un viaje específico (CONDUCTOR puede consultar horarios)
+router.get("/:id", allowRoles("SUPERADMIN", "GESTOR", "CONDUCTOR"), async (req, res) => {
   try {
     const { id } = req.params;
     console.log("📌 Entrando a GET /api/viajes/:id con ID:", id);
@@ -74,8 +79,8 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-// Crear un viaje
-router.post("/", async (req, res) => {
+// Crear un viaje (solo SUPERADMIN y GESTOR)
+router.post("/", allowRoles("SUPERADMIN", "GESTOR"), async (req, res) => {
   try {
     console.log("📌 Datos recibidos en POST /api/viajes:", req.body);
     
@@ -175,8 +180,8 @@ router.post("/", async (req, res) => {
   }
 });
 
-// Actualizar un viaje
-router.put("/:id", async (req, res) => {
+// Actualizar un viaje (solo SUPERADMIN y GESTOR)
+router.put("/:id", allowRoles("SUPERADMIN", "GESTOR"), async (req, res) => {
   try {
     const { id } = req.params;
     console.log("📌 Actualizando viaje ID:", id, "con datos:", req.body);
@@ -282,8 +287,8 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-// Eliminar un viaje
-router.delete("/:id", async (req, res) => {
+// Eliminar un viaje (solo SUPERADMIN y GESTOR)
+router.delete("/:id", allowRoles("SUPERADMIN", "GESTOR"), async (req, res) => {
   try {
     const { id } = req.params;
     console.log("📌 Eliminando viaje ID:", id);
@@ -326,8 +331,8 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
-// Cambiar estado de un viaje
-router.patch("/:id/estado", async (req, res) => {
+// Cambiar estado de un viaje (solo SUPERADMIN y GESTOR)
+router.patch("/:id/estado", allowRoles("SUPERADMIN", "GESTOR"), async (req, res) => {
   try {
     const { id } = req.params;
     const { estViaje } = req.body;

@@ -222,8 +222,8 @@ router.get('/connection-status/:userId', authMiddleware, (req, res) => {
     }
 });
 
-// Limpiar clientes inactivos (solo para administradores)
-router.post('/cleanup', authMiddleware, roleMiddleware(['ADMINISTRADOR', 'SUPERADMIN']), (req, res) => {
+// Limpiar clientes inactivos (solo para gestores y superadmin)
+router.post('/cleanup', authMiddleware, roleMiddleware(['GESTOR', 'SUPERADMIN']), (req, res) => {
     try {
         const realTimeService = global.realTimeService;
         if (!realTimeService) {

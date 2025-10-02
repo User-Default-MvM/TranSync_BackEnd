@@ -381,7 +381,7 @@ const getSystemConfig = async (req, res) => {
             maintenance: false,
             registrationEnabled: true,
             maxUsersPerCompany: 100,
-            allowedRoles: ['CONDUCTOR', 'GESTOR', 'ADMINISTRADOR', 'SUPERADMIN'],
+            allowedRoles: ['CONDUCTOR', 'GESTOR', 'SUPERADMIN'],
             timestamp: new Date().toISOString()
         });
     } catch (error) {

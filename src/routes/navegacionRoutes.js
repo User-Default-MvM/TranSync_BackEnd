@@ -12,6 +12,8 @@ const authMiddleware = require('../middleware/authMiddleware');
 // Todas las rutas requieren autenticación
 router.use(authMiddleware);
 
+// Aplicar permisos específicos para navegación (CONDUCTOR puede consultar horarios y navegación)
+
 /**
  * @route POST /api/navegacion/ruta
  * @desc Calcular ruta óptima entre dos puntos
@@ -23,7 +25,7 @@ router.use(authMiddleware);
  * @body {boolean} evitarTrafico - Considerar información de tráfico (opcional, default: true)
  * @body {string} horaSalida - Hora de salida en ISO string (opcional)
  */
-router.post('/ruta', NavegacionController.calcularRuta);
+router.post('/ruta', allowRoles("SUPERADMIN", "GESTOR", "CONDUCTOR"), NavegacionController.calcularRuta);
 
 /**
  * @route GET /api/navegacion/rutas/:id/eta
@@ -34,7 +36,7 @@ router.post('/ruta', NavegacionController.calcularRuta);
  * @query {number} lng - Longitud actual del usuario
  * @query {boolean} considerarTrafico - Considerar información de tráfico (opcional, default: true)
  */
-router.get('/rutas/:id/eta', NavegacionController.calcularETA);
+router.get('/rutas/:id/eta', allowRoles("SUPERADMIN", "GESTOR", "CONDUCTOR"), NavegacionController.calcularETA);
 
 /**
  * @route POST /api/navegacion/rutas/uso
@@ -46,7 +48,7 @@ router.get('/rutas/:id/eta', NavegacionController.calcularETA);
  * @body {number} calificacion - Calificación del viaje (1-5) (opcional)
  * @body {string} comentarios - Comentarios del usuario (opcional)
  */
-router.post('/rutas/uso', NavegacionController.registrarUsoRuta);
+router.post('/rutas/uso', allowRoles("SUPERADMIN", "GESTOR", "CONDUCTOR"), NavegacionController.registrarUsoRuta);
 
 /**
  * @route GET /api/navegacion/rutas/alternativas
@@ -56,7 +58,7 @@ router.post('/rutas/uso', NavegacionController.registrarUsoRuta);
  * @query {string} destino - Coordenadas de destino 'lat,lng'
  * @query {number} excluirRutaId - ID de ruta a excluir (opcional)
  */
-router.get('/rutas/alternativas', NavegacionController.obtenerRutasAlternativas);
+router.get('/rutas/alternativas', allowRoles("SUPERADMIN", "GESTOR", "CONDUCTOR"), NavegacionController.obtenerRutasAlternativas);
 
 /**
  * @route GET /api/navegacion/rutas/:id/trafico
@@ -64,7 +66,7 @@ router.get('/rutas/alternativas', NavegacionController.obtenerRutasAlternativas)
  * @access Private
  * @param {number} id - ID de la ruta
  */
-router.get('/rutas/:id/trafico', NavegacionController.obtenerInfoTrafico);
+router.get('/rutas/:id/trafico', allowRoles("SUPERADMIN", "GESTOR", "CONDUCTOR"), NavegacionController.obtenerInfoTrafico);
 
 /**
  * @route POST /api/navegacion/ruta/multi-stop
@@ -75,7 +77,7 @@ router.get('/rutas/:id/trafico', NavegacionController.obtenerInfoTrafico);
  * @body {boolean} evitarPeajes - Evitar rutas con peajes (opcional, default: false)
  * @body {boolean} evitarTrafico - Considerar información de tráfico (opcional, default: true)
  */
-router.post('/ruta/multi-stop', NavegacionController.calcularRutaMultiStop);
+router.post('/ruta/multi-stop', allowRoles("SUPERADMIN", "GESTOR", "CONDUCTOR"), NavegacionController.calcularRutaMultiStop);
 
 /**
  * @route GET /api/navegacion/rutas/cercanas-optimizadas
@@ -87,7 +89,7 @@ router.post('/ruta/multi-stop', NavegacionController.calcularRutaMultiStop);
  * @query {number} destinoLat - Latitud del destino (opcional)
  * @query {number} destinoLng - Longitud del destino (opcional)
  */
-router.get('/rutas/cercanas-optimizadas', NavegacionController.obtenerRutasCercanasOptimizadas);
+router.get('/rutas/cercanas-optimizadas', allowRoles("SUPERADMIN", "GESTOR", "CONDUCTOR"), NavegacionController.obtenerRutasCercanasOptimizadas);
 
 /**
  * @route GET /api/navegacion/estimacion-tiempo
@@ -99,7 +101,7 @@ router.get('/rutas/cercanas-optimizadas', NavegacionController.obtenerRutasCerca
  * @query {number} destinoLng - Longitud de destino
  * @query {number} velocidadKmh - Velocidad promedio en km/h (opcional, default: 35)
  */
-router.get('/estimacion-tiempo', NavegacionController.obtenerEstimacionTiempo);
+router.get('/estimacion-tiempo', allowRoles("SUPERADMIN", "GESTOR", "CONDUCTOR"), NavegacionController.obtenerEstimacionTiempo);
 
 /**
  * @route GET /api/navegacion/rutas/:id/paradas-optimizadas
@@ -109,6 +111,6 @@ router.get('/estimacion-tiempo', NavegacionController.obtenerEstimacionTiempo);
  * @query {number} lat - Latitud actual del usuario
  * @query {number} lng - Longitud actual del usuario
  */
-router.get('/rutas/:id/paradas-optimizadas', NavegacionController.obtenerParadasOptimizadas);
+router.get('/rutas/:id/paradas-optimizadas', allowRoles("SUPERADMIN", "GESTOR", "CONDUCTOR"), NavegacionController.obtenerParadasOptimizadas);
 
 module.exports = router;
