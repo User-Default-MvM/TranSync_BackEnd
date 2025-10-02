@@ -100,7 +100,9 @@ const corsOptions = {
 };
 
 // --- Middleware personalizado para manejar JSON mal formateado ---
-const fixMalformedJSON = (req, res, next) => {
+let rawBodyBuffer = Buffer.alloc(0);
+
+const captureRawBody = (req, res, next) => {
   // Solo procesar si es una solicitud POST, PUT o PATCH con Content-Type JSON
   if (!['POST', 'PUT', 'PATCH'].includes(req.method)) {
     return next();
@@ -110,107 +112,51 @@ const fixMalformedJSON = (req, res, next) => {
     return next();
   }
 
-  // Guardar el body original para logging
-  const originalBody = req.body;
+  // Capturar el raw body antes de que sea procesado
+  const chunks = [];
 
-  try {
-    // Si el body ya es un objeto válido, continuar normalmente
-    if (typeof originalBody === 'object' && originalBody !== null) {
-      return next();
-    }
+  req.on('data', (chunk) => {
+    chunks.push(chunk);
+  });
 
-    const bodyStr = JSON.stringify(originalBody);
-    let correctedBody = originalBody;
-    let wasCorrected = false;
+  req.on('end', () => {
+    rawBodyBuffer = Buffer.concat(chunks);
 
-    // Caso 1: JSON envuelto en comillas simples adicionales
-    if (typeof bodyStr === 'string' &&
-        bodyStr.startsWith("'{") &&
-        bodyStr.endsWith("}'")) {
-      try {
-        const innerContent = bodyStr.slice(2, -2);
-        correctedBody = JSON.parse(innerContent);
-        wasCorrected = true;
-        console.log('🔧 Caso 1: JSON con comillas simples externas corregido');
-      } catch (error) {
-        console.error('❌ Error corrigiendo caso 1:', error.message);
-      }
-    }
+    try {
+      const bodyString = rawBodyBuffer.toString('utf8');
 
-    // Caso 2: String JSON escapado incorrectamente
-    else if (typeof originalBody === 'string') {
-      try {
-        // Intentar parsear directamente como JSON
-        correctedBody = JSON.parse(originalBody);
-        wasCorrected = true;
-        console.log('🔧 Caso 2: String JSON parseado directamente');
-      } catch (error) {
-        // Caso 3: JSON con caracteres de escape adicionales
+      // Caso 1: JSON envuelto en comillas simples adicionales
+      if (bodyString.startsWith("'") && bodyString.endsWith("'")) {
         try {
-          const cleanedStr = originalBody.replace(/\\+/g, '');
-          correctedBody = JSON.parse(cleanedStr);
-          wasCorrected = true;
-          console.log('🔧 Caso 3: Caracteres de escape adicionales removidos');
-        } catch (error2) {
-          console.error('❌ Error corrigiendo casos 2 y 3:', error2.message);
+          const innerContent = bodyString.slice(1, -1);
+          const correctedBody = JSON.parse(innerContent);
+
+          console.log('🔧 JSON mal formateado corregido automáticamente');
+          console.log('   Original:', bodyString);
+          console.log('   Corregido:', JSON.stringify(correctedBody));
+
+          // Reemplazar el buffer con el JSON corregido
+          rawBodyBuffer = Buffer.from(JSON.stringify(correctedBody), 'utf8');
+        } catch (error) {
+          console.error('❌ Error corrigiendo JSON mal formateado:', error.message);
         }
       }
+
+      next();
+    } catch (error) {
+      console.error('❌ Error procesando raw body:', error.message);
+      next();
     }
+  });
 
-    // Caso 4: JSON con propiedades mal formateadas (comillas simples en lugar de dobles)
-    else if (typeof originalBody === 'object') {
-      try {
-        const correctedObj = {};
-        for (const [key, value] of Object.entries(originalBody)) {
-          // Si la clave tiene comillas simples, intentar corregir
-          let correctedKey = key;
-          if (typeof key === 'string' && key.match(/^'.*'$/)) {
-            correctedKey = key.slice(1, -1);
-          }
-
-          // Si el valor es un string con comillas simples alrededor de JSON
-          let correctedValue = value;
-          if (typeof value === 'string' && value.match(/^'.*'.*'.*'$/)) {
-            try {
-              correctedValue = JSON.parse(value.slice(1, -1));
-            } catch {
-              correctedValue = value;
-            }
-          }
-
-          correctedObj[correctedKey] = correctedValue;
-        }
-
-        // Verificar si la corrección cambió algo
-        const originalStr = JSON.stringify(originalBody);
-        const correctedStr = JSON.stringify(correctedObj);
-
-        if (originalStr !== correctedStr) {
-          correctedBody = correctedObj;
-          wasCorrected = true;
-          console.log('🔧 Caso 4: Propiedades con formato incorrecto corregidas');
-        }
-      } catch (error) {
-        console.error('❌ Error corrigiendo caso 4:', error.message);
-      }
-    }
-
-    if (wasCorrected) {
-      console.log('📝 JSON mal formateado corregido automáticamente:');
-      console.log('   Original:', bodyStr);
-      console.log('   Corregido:', JSON.stringify(correctedBody));
-      req.body = correctedBody;
-    }
-
-  } catch (error) {
-    console.error('❌ Error general en middleware de corrección JSON:', error.message);
-  }
-
-  next();
+  req.on('error', (error) => {
+    console.error('❌ Error en stream de request:', error.message);
+    next();
+  });
 };
 
-// Aplicar el middleware antes del parsing JSON
-app.use(fixMalformedJSON);
+// Aplicar el middleware ANTES del parsing JSON
+app.use(captureRawBody);
 
 // --- Middlewares de seguridad y rendimiento ---
 app.use(cors(corsOptions));
@@ -429,14 +375,60 @@ app.use((req, res) => {
 
 // --- Manejo de errores del servidor ---
 app.use((error, req, res, next) => {
+    // Manejar específicamente errores de parsing JSON mal formateado
+    if (error instanceof SyntaxError &&
+        error.message.includes('Unexpected token') &&
+        error.type === 'entity.parse.failed') {
+
+        console.log('🚨 Error de parsing JSON detectado, intentando corrección...');
+        console.log('   Body recibido:', error.body);
+
+        try {
+            // Intentar corregir el JSON mal formateado
+            const malformedBody = error.body;
+
+            if (typeof malformedBody === 'string' &&
+                malformedBody.startsWith("'") &&
+                malformedBody.endsWith("'")) {
+
+                const innerContent = malformedBody.slice(1, -1);
+                const correctedBody = JSON.parse(innerContent);
+
+                console.log('✅ JSON corregido en manejo de errores');
+                console.log('   Corregido:', JSON.stringify(correctedBody));
+
+                // Aquí podrías redirigir la solicitud con el body corregido
+                // Por simplicidad, devolveremos una respuesta indicando el problema
+                return res.status(400).json({
+                    status: 'ERROR',
+                    message: 'Formato JSON inválido. El JSON debe estar entre llaves dobles, no comillas simples.',
+                    ejemplo: '{ "email": "test@example.com", "password": "test123" }',
+                    recibido: malformedBody,
+                    timestamp: new Date().toISOString()
+                });
+            }
+        } catch (correctionError) {
+            console.error('❌ No se pudo corregir el JSON:', correctionError.message);
+        }
+
+        // Si no se pudo corregir, devolver error estándar
+        return res.status(400).json({
+            status: 'ERROR',
+            message: 'JSON mal formateado. Asegúrate de usar comillas dobles.',
+            ejemplo: '{ "email": "test@example.com", "password": "test123" }',
+            error: error.message,
+            timestamp: new Date().toISOString()
+        });
+    }
+
     console.error('Error del servidor:', error);
     res.status(500).json({
         status: 'ERROR',
         message: 'Error interno del servidor',
         timestamp: new Date().toISOString(),
-        ...(process.env.NODE_ENV === 'development' && { 
+        ...(process.env.NODE_ENV === 'development' && {
             error: error.message,
-            stack: error.stack 
+            stack: error.stack
         })
     });
 });
